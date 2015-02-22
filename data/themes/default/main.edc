@@ -1,0 +1,314 @@
+
+#define DBG_SHOW(_PART, _R, _G, _B) \
+   part { name: "dbg_show"_PART; \
+      type: RECT; mouse_events: 0; \
+      description { state: "default" 0.0; \
+         rel1.to: _PART; rel2.to: _PART; \
+         color: _R _G _B 50; } }
+
+#define FIXED_SIZE(_W, _H) \
+   min: _W _H; max: _W _H;
+
+images {
+   image: "sel_border.png" COMP;
+   image: "sel_corner1.png" COMP;
+   image: "sel_corner3.png" COMP;
+   image: "sel_corner5.png" COMP;
+   image: "sel_corner7.png" COMP;
+}
+
+collections {
+   group { name: "sel";
+      script {
+         public message(Msg_Type:type, id, ...) {
+            if ((type == MSG_FLOAT_SET) && (id == 1)) {
+               new Float:rel1x, Float:rel1y;
+               new Float:rel2x, Float:rel2y;
+
+               rel1x = getfarg(2);
+               rel1y = getfarg(3);
+               rel2x = getfarg(4);
+               rel2y = getfarg(5);
+
+               custom_state(PART:"selector", "default", 0.0);
+               set_state_val(PART:"selector", STATE_REL1, rel1x, rel1y);
+               set_state_val(PART:"selector", STATE_REL2, rel2x, rel2y);
+               set_state(PART:"selector", "custom", 0.0);
+            }
+         }
+      }
+      parts {
+         part { name: "shader_top"; type: RECT;
+            repeat_events: 1;
+            description { state: "default" 0.0;
+               color: 0 0 0 150;
+               rel2 {
+                  to_y: "selector";
+                  relative: 1.0 0.0;
+               }
+            }
+         }
+         part { name: "shader_bottom"; type: RECT;
+            repeat_events: 1;
+            description { state: "default" 0.0;
+               color: 0 0 0 150;
+               rel1 {
+                  to_y: "selector";
+                  relative: 0.0 1.0;
+               }
+            }
+         }
+         part { name: "shader_left"; type: RECT;
+            repeat_events: 1;
+            description { state: "default" 0.0;
+               color: 0 0 0 150;
+               rel1 {
+                  to_y: "selector";
+                  relative: 0.0 0.0;
+               }
+               rel2 {
+                  to: "selector";
+                  relative: 0.0 1.0;
+               }
+            }
+         }
+         part { name: "shader_right"; type: RECT;
+            repeat_events: 1;
+            description { state: "default" 0.0;
+               color: 0 0 0 150;
+               rel1 {
+                  to: "selector";
+                  relative: 1.0 0.0;
+               }
+               rel2 {
+                  to_y: "selector";
+                  relative: 1.0 1.0;
+               }
+            }
+         }
+         part { name: "selector"; type: IMAGE;
+            repeat_events: 1;
+            description { state: "default" 0.0;
+               color: 255 255 255 200;
+               rel1.relative: 0.2 0.2;
+               rel2.relative: 0.8 0.8;
+               image {
+                  normal: "sel_border.png";
+                  border: 3 3 3 3;
+                  middle: NONE;
+               }
+            }
+            part { name: "h1"; type: IMAGE;
+               repeat_events: 1;
+               description { state: "default" 0.0;
+                  FIXED_SIZE(22, 22)
+                  rel1.offset: 1 1;
+                  align: 0.0 0.0;
+                  color: 255 255 255 0;
+                  image.normal: "sel_corner1.png";
+               }
+               description { state: "visible" 0.0;
+                  inherit: "default" 0.0;
+                  color: 255 255 255 200;
+               }
+            }
+            part { name: "h2"; type: RECT;
+               repeat_events: 1;
+               description { state: "default" 0.0;
+                  color: 255 255 255 0;
+                  rel1 {
+                     to: "h1";
+                     relative: 1.0 0.0;
+                     offset: 3 2;
+                  }
+                  rel2 {
+                     to: "h3";
+                     relative: 0.0 1.0;
+                     offset: -4 -2;
+                  }
+               }
+               description { state: "visible" 0.0;
+                  inherit: "default" 0.0;
+                  color: 255 255 255 80;
+               }
+            }
+            part { name: "h3"; type: IMAGE;
+               repeat_events: 1;
+               description { state: "default" 0.0;
+                  FIXED_SIZE(22, 22)
+                  rel1.offset: 0 1;
+                  rel2.offset: -2 -1;
+                  align: 1.0 0.0;
+                  color: 255 255 255 0;
+                  image.normal: "sel_corner3.png";
+               }
+               description { state: "visible" 0.0;
+                  inherit: "default" 0.0;
+                  color: 255 255 255 200;
+               }
+            }
+            part { name: "h4"; type: RECT;
+               repeat_events: 1;
+               description { state: "default" 0.0;
+                  color: 255 255 255 0;
+                  rel1 {
+                     to: "h3";
+                     relative: 0.0 1.0;
+                     offset: 1 3;
+                  }
+                  rel2 {
+                     to: "h5";
+                     relative: 1.0 0.0;
+                     offset: -3 -4;
+                  }
+               }
+               description { state: "visible" 0.0;
+                  inherit: "default" 0.0;
+                  color: 255 255 255 80;
+               }
+            }
+            part { name: "h5"; type: IMAGE;
+               repeat_events: 1;
+               description { state: "default" 0.0;
+                  FIXED_SIZE(22, 22)
+                  rel2.offset: -2 -2;
+                  align: 1.0 1.0;
+                  color: 255 255 255 0;
+                  image.normal: "sel_corner5.png";
+               }
+               description { state: "visible" 0.0;
+                  inherit: "default" 0.0;
+                  color: 255 255 255 200;
+               }
+            }
+            part { name: "h6"; type: RECT;
+               repeat_events: 1;
+               description { state: "default" 0.0;
+                  rel1 {
+                     to: "h7";
+                     relative: 1.0 0.0;
+                     offset: 3 1;
+                  }
+                  rel2 {
+                     to: "h5";
+                     relative: 0.0 1.0;
+                     offset: -4 -3;
+                  }
+                  color: 255 255 255 0;
+               }
+               description { state: "visible" 0.0;
+                  inherit: "default" 0.0;
+                  color: 255 255 255 80;
+               }
+            }
+            part { name: "h7"; type: IMAGE;
+               repeat_events: 1;
+               description { state: "default" 0.0;
+                  FIXED_SIZE(22, 22)
+                  rel1.offset: 1 0;
+                  rel2.offset: -1 -2;
+                  align: 0.0 1.0;
+                  color: 255 255 255 0;
+                  image.normal: "sel_corner7.png";
+               }
+               description { state: "visible" 0.0;
+                  inherit: "default" 0.0;
+                  color: 255 255 255 200;
+               }
+            }
+            part { name: "h8"; type: RECT;
+               repeat_events: 1;
+               description { state: "default" 0.0;
+                  rel1 {
+                     to: "h1";
+                     relative: 0.0 1.0;
+                     offset: 2 3;
+                  }
+                  rel2 {
+                     to: "h7";
+                     relative: 1.0 0.0;
+                     offset: -2 -4;
+                  }
+                  color: 255 255 255 0;
+               }
+               description { state: "visible" 0.0;
+                  inherit: "default" 0.0;
+                  color: 255 255 255 80;
+               }
+            }
+            part { name: "hm"; type: RECT;
+               repeat_events: 1;
+               description { state: "default" 0.0;
+                  color: 255 255 255 0;
+                  rel1 {
+                     to: "h1";
+                     relative: 1.0 1.0;
+                  }
+                  rel2 {
+                     to: "h5";
+                     relative: 0.0 0.0;
+                  }
+               }
+            }
+
+            program { name: "show corner selectors";
+               signal: "mouse,in"; source: "selector";
+               action: STATE_SET "visible" 0.0;
+               transition: LINEAR 0.3 ;
+               targets: "h1" "h3" "h5" "h7";
+            }
+            program { name: "hide corner selectors";
+               signal: "mouse,out"; source: "selector";
+               action: STATE_SET "default" 0.0;
+               transition: LINEAR 0.3 ;
+               targets: "h1" "h3" "h5" "h7";
+            }
+
+#define SHOW_HIDE_LATERALS(_NAME_)                 \
+   program { signal: "mouse,in"; source: _NAME_;   \
+             action: STATE_SET "visible" 0.0;      \
+             transition: LINEAR 0.3 ;       \
+             target: _NAME_; }                     \
+   program { signal: "mouse,out"; source: _NAME_;  \
+             action: STATE_SET "default" 0.0;      \
+             transition: LINEAR 0.3 ;       \
+             target: _NAME_; }
+            SHOW_HIDE_LATERALS("h2")
+            SHOW_HIDE_LATERALS("h4")
+            SHOW_HIDE_LATERALS("h6")
+            SHOW_HIDE_LATERALS("h8")
+#undef SHOW_HIDE_LATERALS
+         }
+      }
+   }
+
+   /// ICONS //////////////////////////////////////////////////////////////////
+#define IC(Name, File) \
+   group { name: "elm/icon/"##Name##"/default"; \
+      min: 16 16; max: 0 0; \
+      images.image: File COMP; \
+      parts { part { name: "base"; \
+         description { \
+            aspect: 1.0 1.0; aspect_preference: BOTH; \
+            image.normal: File; } } } }
+   IC("document-save", "icon_document_save.png")
+   IC("document-save-as", "icon_document_save_as.png")
+   IC("edit-cut", "icon_edit_cut.png")
+   IC("go-next", "icon_go_next.png")
+   IC("go-previous", "icon_go_previous.png")
+   IC("media-playback-start", "icon_media_playback_start.png")
+   IC("media-playback-pause", "icon_media_playback_pause.png")
+   IC("zoom", "icon_zoom.png")
+   IC("zoom-in", "icon_zoom_in.png")
+   IC("zoom-out", "icon_zoom_out.png")
+   IC("zoom-original", "icon_zoom_original.png")
+   IC("zoom-fit-best", "icon_zoom_fit_best.png")
+   IC("rotate", "icon_rotate.png")
+   IC("resize", "icon_resize.png")
+   IC("object-rotate-left", "icon_object_rotate_left.png")
+   IC("object-rotate-right", "icon_object_rotate_right.png")
+   IC("object-flip-vertical", "icon_object_flip_horizontal.png")
+   IC("object-flip-horizontal", "icon_object_flip_vertical.png")
+#undef IC
+}
+

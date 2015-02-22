@@ -1,0 +1,11 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=Eluminance
+GenericName=Image Viewer
+GenericName[it]=Visualizzatore immagini
+Icon=eluminance
+Exec=eluminance %f
+Terminal=false
+MimeType=inode/directory;image/bmp;image/jpeg;image/gif;image/png;image/tiff;image/x-bmp;image/x-ico;image/x-png;image/x-pcx;image/x-tga;image/xpm;image/svg+xml;
+Categories=Graphics;Viewer;Photography;
