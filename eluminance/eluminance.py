@@ -107,17 +107,17 @@ class StdButton(Button):
 
 
 class TreeView(Genlist):
-    def __init__(self, app, *args, **kargs):
+    def __init__(self, app, parent):
         self.app = app
-
-        Genlist.__init__(self, *args, **kargs)
+        Genlist.__init__(self, parent, size_hint_expand=EXPAND_BOTH,
+                         size_hint_fill=FILL_BOTH)
         self.callback_selected_add(self._item_selected_cb)
         self.callback_expand_request_add(self._item_expand_request_cb)
         self.callback_expanded_add(self._item_expanded_cb)
         self.callback_contract_request_add(self._item_contract_request_cb)
         self.callback_contracted_add(self._item_contracted_cb)
         self.callback_clicked_double_add(self._item_expand_request_cb)
-
+        self.show()
         self.itc = GenlistItemClass('one_icon',
                                     text_get_func=self._gl_text_get,
                                     content_get_func=self._gl_content_get)
@@ -130,6 +130,7 @@ class TreeView(Genlist):
 
     def _item_selected_cb(self, gl, item):
         self.app.grid.populate(item.data)
+        self.app.controls.update()
         self.app.status.update()
 
     def _item_expand_request_cb(self, gl, item):
@@ -331,35 +332,19 @@ class StatusBar(Box):
         self.pack_end(self.lb_info)
         self.lb_info.show()
 
-        # prev button
-        bt = StdButton(self, icon='go-previous')
-        bt.callback_clicked_add(lambda b: self.app.grid.prev_select())
-        self.pack_end(bt)
-        self.btn_prev = bt
-
-        # next button
-        bt = StdButton(self, icon='go-next')
-        bt.callback_clicked_add(lambda b: self.app.grid.next_select())
-        self.pack_end(bt)
-        self.btn_next = bt
-
         # zoom button
         bt = StdButton(self, icon='zoom')
         bt.callback_clicked_add(self._zoom_btn_cb)
         self.pack_end(bt)
         self.btn_zoom = bt
 
-        # slideshow button
-        bt = StdButton(self, icon='media-playback-start')
-        bt.callback_clicked_add(lambda b: SlideShow(self.app))
-        self.pack_end(bt)
-        self.btn_slideshow = bt
-
         # edit button
         bt = StdButton(self, icon='edit')
         bt.callback_clicked_add(lambda b: ImageEditor(self.app))
         self.pack_end(bt)
         self.btn_edit = bt
+
+        self.show()
 
     def update(self):
         image_path = self.app.photo.file
@@ -370,6 +355,7 @@ class StatusBar(Box):
             self.lb_info.text = ''
         else:
             self.btn_zoom.show()
+            self.btn_edit.show()
             self.lb_name.text = '<align=left><b>{0}:</b> {1}</align>'.format(
                                 'Name', os.path.basename(image_path))
             self.lb_info.text = \
@@ -378,19 +364,9 @@ class StatusBar(Box):
                     self.app.photo.image_size[0], self.app.photo.image_size[1],
                     'Size', file_hum_size(image_path)
                 )
-        if self.app.grid.items_count > 1:
-            self.btn_next.show()
-            self.btn_prev.show()
-            self.btn_slideshow.show()
-            self.btn_edit.show()
-        else:
-            self.btn_next.hide()
-            self.btn_prev.hide()
-            self.btn_slideshow.hide()
-            self.btn_edit.hide()
-    
+
     def _zoom_btn_cb(self, btn):
-        m = Menu(self.app.main_win)
+        m = Menu(self.app.win)
         m.item_add(None, 'Zoom In', 'zoom-in', self._zoom_set, -0.3)
         m.item_add(None, 'Zoom Out', 'zoom-out', self._zoom_set, +0.3)
         m.item_separator_add()
@@ -415,12 +391,48 @@ class StatusBar(Box):
         self.app.photo.zoom = 1.0
 
 
+class Controls(Box):
+    def __init__(self, app, parent):
+        self.app = app
+        Box.__init__(self, parent, horizontal=True)
+
+        # prev button
+        bt = StdButton(self, icon='go-previous')
+        bt.callback_clicked_add(lambda b: self.app.grid.prev_select())
+        self.pack_end(bt)
+        self.btn_prev = bt
+
+        # next button
+        bt = StdButton(self, icon='go-next')
+        bt.callback_clicked_add(lambda b: self.app.grid.next_select())
+        self.pack_end(bt)
+        self.btn_next = bt
+
+        # slideshow play button
+        bt = StdButton(self, icon='media-playback-start')
+        bt.callback_clicked_add(lambda b: SlideShow(self.app))
+        self.pack_end(bt)
+        self.btn_play = bt
+
+        self.show()
+
+    def update(self):
+        if self.app.grid.items_count > 1:
+            self.btn_next.disabled = False
+            self.btn_prev.disabled = False
+            self.btn_play.disabled = False
+        else:
+            self.btn_next.disabled = True
+            self.btn_prev.disabled = True
+            self.btn_play.disabled = True
+
+
 class SlideShow(Slideshow):
     NOTIFY_TIMEOUT = 3.0
     def __init__(self, app):
-        Slideshow.__init__(self, app.main_win, timeout=5.0,
+        Slideshow.__init__(self, app.win, timeout=5.0,
                            size_hint_expand=EXPAND_BOTH)
-        app.main_win.resize_object_add(self)
+        app.win.resize_object_add(self)
         self.show()
 
         itc = SlideshowItemClass(self._item_get_func)
@@ -446,7 +458,7 @@ class SlideShow(Slideshow):
         bt.callback_clicked_add(lambda b: self.next())
         box.pack_end(bt)
 
-        hv = Hoversel(box, hover_parent=app.main_win, text=self.transitions[0])
+        hv = Hoversel(box, hover_parent=app.win, text=self.transitions[0])
         for t in list(self.transitions) + [None]:
             hv.item_add(t or "None", None, 0, self._transition_cb, t)
         box.pack_end(hv)
@@ -497,16 +509,16 @@ class SlideShow(Slideshow):
 
 class ImageEditor(object):
     def __init__(self, app):
-        self.bg = Background(app.main_win, size_hint_expand=EXPAND_BOTH)
-        app.main_win.resize_object_add(self.bg)
+        self.bg = Background(app.win, size_hint_expand=EXPAND_BOTH)
+        app.win.resize_object_add(self.bg)
         self.bg.show()
 
         box = Box(self.bg, size_hint_expand=EXPAND_BOTH,
                   size_hint_fill=FILL_BOTH)
-        app.main_win.resize_object_add(box)
+        app.win.resize_object_add(box)
         box.show()
 
-        tb = Toolbar(app.main_win, homogeneous=True, menu_parent=app.main_win,
+        tb = Toolbar(app.win, homogeneous=True, menu_parent=app.win,
                      size_hint_expand=EXPAND_HORIZ,
                      size_hint_fill=FILL_HORIZ)
 
@@ -550,50 +562,49 @@ class MainWin(StandardWindow):
                                 autodel=True, size=(800,600))
         self.callback_delete_request_add(lambda o: elementary.exit())
 
-        hpanes = Panes(self, content_left_size=0.0, content_left_min_size=200,
-                       size_hint_expand=EXPAND_BOTH)
-        self.resize_object_add(hpanes)
-        hpanes.show()
+    def apply_layout(self, layout):
+        if layout == 'default':
+            vbox = Box(self, size_hint_expand=EXPAND_BOTH)
+            vbox2 = Box(self, size_hint_expand=EXPAND_BOTH)
+            hpanes = Panes(self, content_left_size=0.0,
+                           content_left_min_size=200,
+                           content_right_min_size=200,
+                           size_hint_expand=EXPAND_BOTH,
+                           size_hint_fill=FILL_BOTH)
+            vpanes = Panes(hpanes, horizontal=True,
+                           content_left_min_size=3,
+                           content_right_min_size=3,
+                           size_hint_expand=EXPAND_BOTH,
+                           size_hint_fill=FILL_BOTH)
 
-        vbox = Box(hpanes, size_hint_expand=EXPAND_BOTH)
-        hpanes.part_content_set('right', vbox)
-        vbox.show()
+            self.resize_object_add(vbox)
+            vbox.pack_end(hpanes)
+            hpanes.part_content_set('left', vbox2)
+            vbox2.pack_end(self.app.controls)
+            vbox2.pack_end(self.app.tree)
+            hpanes.part_content_set('right', vpanes)
+            vpanes.part_content_set('left', self.app.grid)
+            vpanes.part_content_set('right', self.app.photo)
+            vbox.pack_end(self.app.status)
 
-        vpanes = Panes(hpanes, horizontal=True, size_hint_expand=EXPAND_BOTH,
-                       size_hint_fill=FILL_BOTH)
-        vbox.pack_end(vpanes)
-        vpanes.show()
-
-        self.status = StatusBar(app, vbox)
-        vbox.pack_end(self.status)
-        self.status.show()
-
-        self.tree = TreeView(app, hpanes)
-        hpanes.part_content_set('left', self.tree)
-        self.tree.show()
-
-        self.grid = PhotoGrid(app, hpanes)
-        vpanes.part_content_set('left', self.grid)
-        self.grid.show()
-
-        self.photo = ScrollablePhotocam(app, self)
-        self.photo.callback_clicked_double_add(lambda b: ImageEditor(self.app))
-        vpanes.part_content_set('right', self.photo)
-        self.photo.show()
-
-        self.show()
+            for w in vbox, vbox2, hpanes, vpanes:
+                w.show()
 
 
 class EluminanceApp(object):
     def __init__(self):
-        self.main_win = MainWin(self)
-        self.tree = self.main_win.tree
-        self.grid = self.main_win.grid
-        self.photo = self.main_win.photo
-        self.status = self.main_win.status
+        self.win = MainWin(self)
+        self.controls = Controls(self, self.win)
+        self.tree = TreeView(self, self.win)
+        self.grid = PhotoGrid(self, self.win)
+        self.photo = ScrollablePhotocam(self, self.win)
+        self.status = StatusBar(self, self.win)
+        self.win.apply_layout('default')
 
         self.tree.populate(os.path.expanduser("~"))
+        self.controls.update()
         self.status.update()
+        self.win.show()
 
 
 def main():
