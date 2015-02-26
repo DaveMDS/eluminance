@@ -60,6 +60,9 @@ install_prefix = script_path[0:script_path.find('/lib/python')]
 data_path = os.path.join(install_prefix, 'share', 'eluminance')
 THEME_FILE = os.path.join(data_path, 'themes', 'default.edj')
 
+def _(string):
+    return string
+
 def clamp(low, val, high):
     if val < low: return low
     if val > high: return high
@@ -394,6 +397,8 @@ class StatusBar(Box):
 class Controls(Box):
     def __init__(self, app, parent):
         self.app = app
+        self._pref_menu = None
+
         Box.__init__(self, parent, horizontal=True)
 
         # prev button
@@ -414,6 +419,11 @@ class Controls(Box):
         self.pack_end(bt)
         self.btn_play = bt
 
+        # options
+        bt = StdButton(self, icon='preferences-system')
+        bt.callback_clicked_add(self._preferences_btn_cb)
+        self.pack_end(bt)
+
         self.show()
 
     def update(self):
@@ -426,6 +436,27 @@ class Controls(Box):
             self.btn_prev.disabled = True
             self.btn_play.disabled = True
 
+    def _preferences_btn_cb(self, btn):
+        if self._pref_menu is not None:
+            self._pref_menu.delete()
+            return
+            
+        m = Menu(self.app.win)
+        m.callback_dismissed_add(lambda m: m.delete())
+        m.on_del_add(lambda o: setattr(self, '_pref_menu', None))
+
+        it = m.item_add(None, _('Window Layout'))
+        for lay, label in self.app.win.available_layouts:
+            icon = 'arrow-right' if lay == self.app.win.current_layout else None
+            m.item_add(it, label, icon,
+                       lambda m, i, l: self.app.win.apply_layout(l), lay)
+
+        self._pref_menu = m
+        x, y, w, h = btn.geometry
+        m.move(x, y+h+3)
+        m.show()
+
+        
 
 class SlideShow(Slideshow):
     NOTIFY_TIMEOUT = 3.0
@@ -562,34 +593,48 @@ class MainWin(StandardWindow):
                                 autodel=True, size=(800,600))
         self.callback_delete_request_add(lambda o: elementary.exit())
 
+        self._layout_widgets = []
+        self.current_layout = None
+        self.available_layouts = [
+            ('default', _('Default')),
+            ('wide', _('Wide')),
+        ]
+
     def apply_layout(self, layout):
-        if layout == 'default':
-            vbox = Box(self, size_hint_expand=EXPAND_BOTH)
-            vbox2 = Box(self, size_hint_expand=EXPAND_BOTH)
-            hpanes = Panes(self, content_left_size=0.0,
-                           content_left_min_size=200,
-                           content_right_min_size=200,
-                           size_hint_expand=EXPAND_BOTH,
-                           size_hint_fill=FILL_BOTH)
-            vpanes = Panes(hpanes, horizontal=True,
-                           content_left_min_size=3,
-                           content_right_min_size=3,
-                           size_hint_expand=EXPAND_BOTH,
-                           size_hint_fill=FILL_BOTH)
+        old_widgets = [ w for w in self._layout_widgets ]
+        self._layout_widgets = getattr(self, '_layout_'+layout)()
+        self.current_layout = layout
+        for w in old_widgets:
+            w.delete()
 
-            self.resize_object_add(vbox)
-            vbox.pack_end(hpanes)
-            hpanes.part_content_set('left', vbox2)
-            vbox2.pack_end(self.app.controls)
-            vbox2.pack_end(self.app.tree)
-            hpanes.part_content_set('right', vpanes)
-            vpanes.part_content_set('left', self.app.grid)
-            vpanes.part_content_set('right', self.app.photo)
-            vbox.pack_end(self.app.status)
+    def _layout_default(self, wide=False):
+        vbox = Box(self, size_hint_expand=EXPAND_BOTH)
+        vbox2 = Box(self, size_hint_expand=EXPAND_BOTH)
+        hpanes = Panes(self, content_left_size=0.0,
+                       content_left_min_size=200, content_right_min_size=200,
+                       size_hint_expand=EXPAND_BOTH, size_hint_fill=FILL_BOTH)
+        vpanes = Panes(hpanes, horizontal=not wide,
+                       content_left_min_size=3, content_right_min_size=3,
+                       size_hint_expand=EXPAND_BOTH, size_hint_fill=FILL_BOTH)
 
-            for w in vbox, vbox2, hpanes, vpanes:
-                w.show()
+        self.resize_object_add(vbox)
+        vbox.pack_end(hpanes)
+        hpanes.part_content_set('left', vbox2)
+        vbox2.pack_end(self.app.controls)
+        vbox2.pack_end(self.app.tree)
+        hpanes.part_content_set('right', vpanes)
+        vpanes.part_content_set('left', self.app.grid)
+        vpanes.part_content_set('right', self.app.photo)
+        vbox.pack_end(self.app.status)
 
+        for w in vbox, vbox2, hpanes, vpanes:
+            w.show()
+        return (vbox, vbox2, hpanes, vpanes)
+
+    def _layout_wide(self):
+        return self._layout_default(wide=True)
+        
+        
 
 class EluminanceApp(object):
     def __init__(self):
