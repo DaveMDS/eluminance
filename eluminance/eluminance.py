@@ -21,6 +21,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
 import os
+import sys
 import re
 
 from efl.evas import EXPAND_BOTH, EXPAND_HORIZ, FILL_BOTH, FILL_HORIZ, \
@@ -147,7 +148,7 @@ class TreeView(Genlist):
 
     def _item_contracted_cb(self, gl, item):
         item.subitems_clear()
-        
+
     def populate(self, path, parent=None):
         for f in natural_sort(os.listdir(path)):
             if f[0] == '.': continue
@@ -155,6 +156,24 @@ class TreeView(Genlist):
             if os.path.isdir(fullpath):
                 self.item_append(self.itc, fullpath, parent,
                                  flags=ELM_GENLIST_ITEM_TREE)
+
+    def expand_to_folder(self, path):
+        if os.path.isfile(path):
+            path = os.path.dirname(path)
+        it = self.first_item
+        while it:
+            if it.data == path:
+                self.populate(it.data, it)
+                it.expanded = True
+                it.selected = True
+                it.show()
+                return
+            if path.startswith(it.data + os.path.sep):
+                self.populate(it.data, it)
+                it.expanded = True
+                it = it.subitems_get()[0]
+            else:
+                it = it.next
 
 
 class PhotoGrid(Gengrid):
@@ -198,6 +217,15 @@ class PhotoGrid(Gengrid):
         it = self.selected_item or self.last_item
         if it: it = it.prev
         if it: it.selected = True
+
+    def file_select(self, path):
+        it = self.first_item
+        while it:
+            if it.data == path:
+                it.selected = True
+                it.show()
+                return
+            it = it.next
 
 
 class ScrollablePhotocam(Photocam, Scrollable):
@@ -456,7 +484,6 @@ class Controls(Box):
         m.move(x, y+h+3)
         m.show()
 
-        
 
 class SlideShow(Slideshow):
     NOTIFY_TIMEOUT = 3.0
@@ -633,8 +660,7 @@ class MainWin(StandardWindow):
 
     def _layout_wide(self):
         return self._layout_default(wide=True)
-        
-        
+
 
 class EluminanceApp(object):
     def __init__(self):
@@ -646,7 +672,16 @@ class EluminanceApp(object):
         self.status = StatusBar(self, self.win)
         self.win.apply_layout('default')
 
-        self.tree.populate(os.path.expanduser("~"))
+        self.tree.populate(os.path.expanduser('~'))
+        self.grid.populate(os.path.expanduser('~'))
+
+        if len(sys.argv) > 1:
+            path = os.path.abspath(sys.argv[1])
+            if os.path.exists(path):
+                self.tree.expand_to_folder(path)
+                if os.path.isfile(path):
+                    self.grid.file_select(path)
+        
         self.controls.update()
         self.status.update()
         self.win.show()
