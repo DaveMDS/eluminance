@@ -179,6 +179,7 @@ class TreeView(Genlist):
 class PhotoGrid(Gengrid):
     def __init__(self, app, parent):
         self.app = app
+        self.current_path = None
 
         Gengrid.__init__(self, parent, select_mode=ELM_OBJECT_SELECT_MODE_ALWAYS,
                          item_size=(128, 128), align=(0.5, 0.0))
@@ -200,6 +201,7 @@ class PhotoGrid(Gengrid):
         self.app.status.update()
 
     def populate(self, path):
+        self.current_path = path
         self.clear()
         for f in natural_sort(os.listdir(path)):
             if os.path.splitext(f)[-1].lower() in IMG_EXTS:
@@ -207,6 +209,7 @@ class PhotoGrid(Gengrid):
         if self.first_item:
             self.first_item.selected = True
             self.first_item.show()
+        self.app.win.update()
 
     def next_select(self):
         it = self.selected_item or self.first_item
@@ -627,6 +630,9 @@ class MainWin(StandardWindow):
             ('wide', _('Wide')),
         ]
 
+    def update(self):
+        self.title = 'eluminance - ' + self.app.grid.current_path
+
     def apply_layout(self, layout):
         old_widgets = [ w for w in self._layout_widgets ]
         self._layout_widgets = getattr(self, '_layout_'+layout)()
@@ -684,6 +690,7 @@ class EluminanceApp(object):
         
         self.controls.update()
         self.status.update()
+        self.win.update()
         self.win.show()
 
 
