@@ -6,12 +6,203 @@
          rel1.to: _PART; rel2.to: _PART; \
          color: _R _G _B 50; } }
 
-#define FIXED_SIZE(_W, _H) \
-   min: _W _H; max: _W _H;
+#define SHOW(_PART) DBG_SHOW(_PART, 50, 0, 0)
 
+#define FIXED_SIZE(_W, _H) \
+   min: _W _H; max: _W _H; fixed: 1 1;
+
+
+images {
+   image: "bg_fill.png" COMP;
+   image: "bg_overlay.png" COMP;
+   image: "bg_bevel.png" COMP;
+   image: "glint.png" COMP;
+   image: "status_bg.png" COMP;
+}
 
 collections {
-    #include "cropper.edc"
+
+   group { name: "eluminance/main";
+      parts {
+
+         //// Background
+         part { name: "bg_fill"; mouse_events: 0;
+            description { state: "default" 0.0;
+               fixed: 1 1;
+               image.normal: "bg_fill.png";
+               fill {
+                  size.relative: 0.0 0.0;
+                  size.offset: 64 64;
+               }
+            }
+            part { name: "bg_overlay"; mouse_events: 0;
+               description { state: "default" 0.0;
+                  fixed: 1 1;
+                  image.normal: "bg_overlay.png";
+                  fill.smooth: 0;
+               }
+            }
+            part { name: "bg_bevel";
+               description { state: "default" 0.0;
+                  image.normal: "bg_bevel.png";
+                  image.border: 1 1 1 1;
+                  image.middle: 0;
+                  fill.smooth: 0;
+               }
+            }
+         }
+
+         //// Photocam
+         part { name: "photo.swallow"; type: SWALLOW;
+            description { state: "default" 0.0;
+            }
+         }
+
+         //// Grid (thumbnails)
+         SHOW("grid_in_events")
+         part { name: "grid.swallow"; type: SWALLOW;
+            description { state: "default" 0.0;
+               rel1.relative: 1.0 0.0;
+               rel2.relative: 1.0 0.0;
+               rel2.offset: -1 0;
+               rel2.to_y: "status";
+               min: 150 0;
+               align: 0.0 0.0;
+               fixed: 1 1;
+            }
+            description { state: "visible" 0.0;
+               inherit: "default" 0.0;
+               align: 1.0 0.0;
+            }
+         }
+         part { name: "grid_in_events"; type: RECT;
+            repeat_events: 1;
+            description { state: "default" 0.0;
+               rel1.relative: 1.0 0.0;
+               rel1.offset: -50 0;
+               color: 0 0 0 0;
+            }
+         }
+         part { name: "grid_out_events"; type: RECT;
+            repeat_events: 1;
+            description { state: "default" 0.0;
+               rel1.relative: 1.0 0.0;
+               rel1.offset: -200 0;
+               color: 0 0 0 0;
+            }
+         }
+         program { name: "show_grid";
+            signal: "mouse,in"; source: "grid_in_events";
+            action: STATE_SET "visible" 0.0;
+            transition: DECELERATE 0.3 CURRENT;
+            target: "grid.swallow";
+            after: "stop_hiding";
+         }
+         program { name: "hide_grid";
+            signal: "mouse,out"; source: "grid_out_events";
+            action: STATE_SET "default" 0.0;
+            transition: ACCELERATE 0.3 CURRENT;
+            target: "grid.swallow";
+            in: 1.5 0.0;
+         }
+         program { name: "stop_hiding";
+            action: ACTION_STOP;
+            target: "hide_grid";
+         }
+
+         //// Tree swallow
+         SHOW("tree_in_events")
+         part { name: "tree.swallow"; type: SWALLOW;
+            description { state: "default" 0.0;
+               rel2.relative: 0.0 0.0;
+               rel2.to_y: "status";
+               rel2.offset: -1 0;
+               min: 200 0;
+               align: 1.0 0.0;
+               fixed: 1 1;
+            }
+            description { state: "visible" 0.0;
+               inherit: "default" 0.0;
+               align: 0.0 0.0;
+            }
+         }
+         part { name: "tree_in_events"; type: RECT;
+            repeat_events: 1;
+            description { state: "default" 0.0;
+               rel2.relative: 0.0 1.0;
+               rel2.offset: 50 0;
+               color: 0 0 0 0;
+            }
+         }
+         part { name: "tree_out_events"; type: RECT;
+            repeat_events: 1;
+            description { state: "default" 0.0;
+               rel2.relative: 0.0 1.0;
+               rel2.offset: 200 0;
+               color: 0 0 0 0;
+            }
+         }
+         program { name: "show_tree";
+            signal: "mouse,in"; source: "tree_in_events";
+            action: STATE_SET "visible" 0.0;
+            transition: DECELERATE 0.3 CURRENT;
+            target: "tree.swallow";
+            target: "grid.swallow";
+            after: "stop_hiding2";
+         }
+         program { name: "hide_tree";
+            signal: "mouse,out"; source: "tree_out_events";
+            action: STATE_SET "default" 0.0;
+            transition: ACCELERATE 0.3 CURRENT;
+            target: "tree.swallow";
+            target: "grid.swallow";
+            in: 1.5 0.0;
+         }
+         program { name: "stop_hiding2";
+            action: ACTION_STOP;
+            target: "hide_grid";
+            target: "hide_tree";
+         }
+
+         //// Statusbar
+         SHOW("status")
+         part { name: "status"; type: IMAGE;
+            description { state: "default" 0.0;
+               rel1.relative: 0.0 1.0;
+               rel1.offset: 0 -24;
+               image.normal: "status_bg.png";
+            }
+            part { name: "status.swallow"; type: SWALLOW;
+               description { state: "default" 0.0;
+                  rel1.offset: 3 0;
+                  rel2.offset: -4 -1;
+               }
+            }
+            part { name: "status_bevel"; mouse_events: 0;
+               description { state: "default" 0.0;
+                  image.normal: "bg_bevel.png";
+                  image.border: 0 0 1 1;
+                  image.middle: 0;
+                  fill.smooth: 0;
+               }
+            }
+            part { name: "status_glint"; type: IMAGE;
+               description { state: "default" 0.0;
+                  FIXED_SIZE(79, 5)
+                  rel2.relative: 1.0 0.0;
+                  rel2.offset: -1 0;
+                  image.normal: "glint.png";
+               }
+            }
+         }
+         
+      }
+   }
+
+
+
+   /// CROPPER ////////////////////////////////////////////////////////////////
+   #include "cropper.edc"
 
    /// ICONS //////////////////////////////////////////////////////////////////
 #define IC(Name, File) \

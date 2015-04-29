@@ -40,13 +40,14 @@ from efl.elementary.hoversel import Hoversel
 from efl.elementary.icon import Icon
 from efl.elementary.image import Image
 from efl.elementary.label import Label
+from efl.elementary.layout import Layout
 from efl.elementary.menu import Menu
 from efl.elementary.notify import Notify
 from efl.elementary.panes import Panes
 from efl.elementary.photocam import Photocam, ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT, \
     ELM_PHOTOCAM_ZOOM_MODE_AUTO_FILL, ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT_IN, \
     ELM_PHOTOCAM_ZOOM_MODE_MANUAL
-from efl.elementary.scroller import Scrollable
+from efl.elementary.scroller import Scrollable, ELM_SCROLLER_POLICY_OFF
 from efl.elementary.slideshow import Slideshow, SlideshowItemClass
 from efl.elementary.spinner import Spinner
 from efl.elementary.thumb import Thumb
@@ -111,8 +112,8 @@ class StdButton(Button):
 
 
 class TreeView(Genlist):
-    def __init__(self, app, parent):
-        self.app = app
+    def __init__(self, parent, select_cb):
+        self._select_cb = select_cb
         Genlist.__init__(self, parent, size_hint_expand=EXPAND_BOTH,
                          size_hint_fill=FILL_BOTH)
         self.callback_selected_add(self._item_selected_cb)
@@ -133,9 +134,7 @@ class TreeView(Genlist):
         return Icon(gl, standard='folder')
 
     def _item_selected_cb(self, gl, item):
-        self.app.grid.populate(item.data)
-        self.app.controls.update()
-        self.app.status.update()
+        self._select_cb(item.data)
 
     def _item_expand_request_cb(self, gl, item):
         item.expanded = True
@@ -177,9 +176,8 @@ class TreeView(Genlist):
 
 
 class PhotoGrid(Gengrid):
-    def __init__(self, app, parent):
-        self.app = app
-        self.current_path = None
+    def __init__(self, parent, select_cb):
+        self._select_cb = select_cb
 
         Gengrid.__init__(self, parent, select_mode=ELM_OBJECT_SELECT_MODE_ALWAYS,
                          item_size=(128, 128), align=(0.5, 0.0))
@@ -197,11 +195,9 @@ class PhotoGrid(Gengrid):
         return os.path.basename(item_data)
 
     def _item_selected_cb(self, gg, item):
-        self.app.photo.file_set(item.data)
-        self.app.status.update()
+        self._select_cb(item.data)
 
     def populate(self, path):
-        self.current_path = path
         self.clear()
         for f in natural_sort(os.listdir(path)):
             if os.path.splitext(f)[-1].lower() in IMG_EXTS:
@@ -209,7 +205,6 @@ class PhotoGrid(Gengrid):
         if self.first_item:
             self.first_item.selected = True
             self.first_item.show()
-        self.app.win.update()
 
     def next_select(self):
         it = self.selected_item or self.first_item
@@ -232,11 +227,10 @@ class PhotoGrid(Gengrid):
 
 
 class ScrollablePhotocam(Photocam, Scrollable):
-    def __init__(self, app, *args, **kargs):
-        self.app = app
-        Photocam.__init__(self, paused=True,
-                          zoom_mode=ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT,
-                          *args, **kargs)
+    def __init__(self, parent):
+        Photocam.__init__(self, parent, paused=True,
+                          zoom_mode=ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT)
+        self.policy = ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_OFF
         self.on_mouse_wheel_add(self._on_mouse_wheel)
         self.on_mouse_down_add(self._on_mouse_down)
         self.on_mouse_up_add(self._on_mouse_up)
@@ -350,8 +344,7 @@ class ScrollablePhotocam(Photocam, Scrollable):
 
 
 class StatusBar(Box):
-    def __init__(self, app, parent):
-        self.app = app
+    def __init__(self, parent):
         Box.__init__(self, parent, horizontal=True,
                      size_hint_expand=EXPAND_HORIZ,
                      size_hint_fill=FILL_HORIZ)
@@ -367,36 +360,33 @@ class StatusBar(Box):
         self.lb_info.show()
 
         # zoom button
-        bt = StdButton(self, icon='zoom')
-        bt.callback_clicked_add(self._zoom_btn_cb)
-        self.pack_end(bt)
-        self.btn_zoom = bt
+        # bt = StdButton(self, icon='zoom')
+        # bt.callback_clicked_add(self._zoom_btn_cb)
+        # self.pack_end(bt)
+        # self.btn_zoom = bt
 
         # edit button
-        bt = StdButton(self, icon='edit')
-        bt.callback_clicked_add(lambda b: ImageEditor(self.app))
-        self.pack_end(bt)
-        self.btn_edit = bt
+        # bt = StdButton(self, icon='edit')
+        # bt.callback_clicked_add(lambda b: ImageEditor(self.app))
+        # self.pack_end(bt)
+        # self.btn_edit = bt
 
-        self.show()
 
-    def update(self):
-        image_path = self.app.photo.file
-        if image_path is None:
-            self.btn_zoom.hide()
-            self.btn_edit.hide()
-            self.lb_name.text = '<align=left>{}</>'.format('No image selected')
+    def update(self, img_path, img_size):
+        if img_path is None:
+            # self.btn_zoom.hide()
+            # self.btn_edit.hide()
+            self.lb_name.text = '<align=left>{}</>'.format(_('No image selected'))
             self.lb_info.text = ''
         else:
-            self.btn_zoom.show()
-            self.btn_edit.show()
+            # self.btn_zoom.show()
+            # self.btn_edit.show()
             self.lb_name.text = '<align=left><b>{0}:</b> {1}</align>'.format(
-                                'Name', os.path.basename(image_path))
+                                'Name', os.path.basename(img_path))
             self.lb_info.text = \
-                '    <b>{0}:</b> {1}x{2}    <b>{3}:</b> {4}    '.format(
-                    'Resolution',
-                    self.app.photo.image_size[0], self.app.photo.image_size[1],
-                    'Size', file_hum_size(image_path)
+                '    <b>{0}:</b> {1}x{2}    <b>{3}:</b> {4}'.format(
+                    _('Resolution'), img_size[0], img_size[1],
+                    _('Size'), file_hum_size(img_path)
                 )
 
     def _zoom_btn_cb(self, btn):
@@ -617,69 +607,40 @@ class ImageEditor(object):
 
 
 class MainWin(StandardWindow):
-    def __init__(self, app):
-        self.app = app
-        StandardWindow.__init__(self, 'edje_cropper', 'eluminance',
+    def __init__(self):
+        StandardWindow.__init__(self, 'eluminance', 'Eluminance',
                                 autodel=True, size=(800,600))
         self.callback_delete_request_add(lambda o: elementary.exit())
 
-        self._layout_widgets = []
-        self.current_layout = None
-        self.available_layouts = [
-            ('default', _('Default')),
-            ('wide', _('Wide')),
-        ]
+        self.layout = Layout(self, file=(THEME_FILE, 'eluminance/main'),
+                             size_hint_expand=EXPAND_BOTH)
+        self.resize_object_add(self.layout)
+        self.layout.show()
 
-    def update(self):
-        self.title = 'eluminance - ' + self.app.grid.current_path
-
-    def apply_layout(self, layout):
-        old_widgets = [ w for w in self._layout_widgets ]
-        self._layout_widgets = getattr(self, '_layout_'+layout)()
-        self.current_layout = layout
-        for w in old_widgets:
-            w.delete()
-
-    def _layout_default(self, wide=False):
-        vbox = Box(self, size_hint_expand=EXPAND_BOTH)
-        vbox2 = Box(self, size_hint_expand=EXPAND_BOTH)
-        hpanes = Panes(self, content_left_size=0.0,
-                       content_left_min_size=200, content_right_min_size=200,
-                       size_hint_expand=EXPAND_BOTH, size_hint_fill=FILL_BOTH)
-        vpanes = Panes(hpanes, horizontal=not wide,
-                       content_left_min_size=3, content_right_min_size=3,
-                       size_hint_expand=EXPAND_BOTH, size_hint_fill=FILL_BOTH)
-
-        self.resize_object_add(vbox)
-        vbox.pack_end(hpanes)
-        hpanes.part_content_set('left', vbox2)
-        vbox2.pack_end(self.app.controls)
-        vbox2.pack_end(self.app.tree)
-        hpanes.part_content_set('right', vpanes)
-        vpanes.part_content_set('left', self.app.grid)
-        vpanes.part_content_set('right', self.app.photo)
-        vbox.pack_end(self.app.status)
-
-        for w in vbox, vbox2, hpanes, vpanes:
-            w.show()
-        return (vbox, vbox2, hpanes, vpanes)
-
-    def _layout_wide(self):
-        return self._layout_default(wide=True)
-
+    def swallow_all(self, app):
+        self.layout.content_set('photo.swallow', app.photo)
+        self.layout.content_set('grid.swallow', app.grid)
+        self.layout.content_set('tree.swallow', app.tree)
+        self.layout.content_set('status.swallow', app.status)
+        
 
 class EluminanceApp(object):
     def __init__(self):
-        self.win = MainWin(self)
-        self.controls = Controls(self, self.win)
-        self.tree = TreeView(self, self.win)
-        self.grid = PhotoGrid(self, self.win)
-        self.photo = ScrollablePhotocam(self, self.win)
-        self.status = StatusBar(self, self.win)
-        self.win.apply_layout('default')
 
-        self.tree.populate(os.path.expanduser('~'))
-        self.grid.populate(os.path.expanduser('~'))
+        self.win = MainWin()
+        self.photo = ScrollablePhotocam(self.win)
+        self.grid = PhotoGrid(self.win, self.grid_selected)
+        self.tree = TreeView(self.win, self.tree_selected)
+        self.status = StatusBar(self.win)
+
+        self.win.swallow_all(self)
+
+        # self.controls = Controls(self, self.win)
+
+        self.current_path = os.path.expanduser('~')
+        self.current_file = None
+        self.tree.populate(self.current_path)
+        self.grid.populate(self.current_path) # TODO only if not args !!
 
         if len(sys.argv) > 1:
             path = os.path.abspath(sys.argv[1])
@@ -687,12 +648,24 @@ class EluminanceApp(object):
                 self.tree.expand_to_folder(path)
                 if os.path.isfile(path):
                     self.grid.file_select(path)
-        
-        self.controls.update()
-        self.status.update()
-        self.win.update()
+
+        self.update_infos()
         self.win.show()
 
+    def update_infos(self):
+        self.win.title = 'eluminance - ' + self.current_path
+        self.status.update(self.current_file, self.photo.image_size)
+        # self.controls.update()
+
+    def tree_selected(self, path):
+        self.current_path = path
+        self.grid.populate(path)
+        self.update_infos()
+
+    def grid_selected(self, path):
+        self.current_file = path
+        self.photo.file_set(path)
+        self.update_infos()
 
 def main():
     elementary.init()
