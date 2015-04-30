@@ -43,11 +43,11 @@ from efl.elementary.label import Label
 from efl.elementary.layout import Layout
 from efl.elementary.menu import Menu
 from efl.elementary.notify import Notify
-from efl.elementary.panes import Panes
 from efl.elementary.photocam import Photocam, ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT, \
     ELM_PHOTOCAM_ZOOM_MODE_AUTO_FILL, ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT_IN, \
     ELM_PHOTOCAM_ZOOM_MODE_MANUAL
 from efl.elementary.scroller import Scrollable, ELM_SCROLLER_POLICY_OFF
+from efl.elementary.separator import Separator
 from efl.elementary.slideshow import Slideshow, SlideshowItemClass
 from efl.elementary.spinner import Spinner
 from efl.elementary.thumb import Thumb, ETHUMB_THUMB_CROP
@@ -98,7 +98,6 @@ class StdButton(Button):
     """ A Button with a standard fdo icon """
     def __init__(self, parent, icon, *args, **kargs):
         Button.__init__(self, parent, *args, **kargs)
-        # self.content = Icon(self, standard=icon, resizable=(False, False))
         self.icon = icon
         self.show()
 
@@ -228,10 +227,14 @@ class PhotoGrid(Gengrid):
 
 
 class ScrollablePhotocam(Photocam, Scrollable):
-    def __init__(self, parent):
+    ZOOMS = [0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.75, 1.0, 1.5,
+             2.0, 3.0, 5.0, 7.5, 10, 15, 20, 30, 50, 75, 100]
+    def __init__(self, parent, zoomed_cb):
+        self._zoomed_cb = zoomed_cb
         Photocam.__init__(self, parent, paused=True,
                           zoom_mode=ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT)
         self.policy = ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_OFF
+        self.callback_zoom_change_add(self._zoom_change_cb)
         self.on_mouse_wheel_add(self._on_mouse_wheel)
         self.on_mouse_down_add(self._on_mouse_down)
         self.on_mouse_up_add(self._on_mouse_up)
@@ -243,14 +246,40 @@ class ScrollablePhotocam(Photocam, Scrollable):
         self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT
         Photocam.file_set(self, file)
 
+    def zoom_in(self):
+        new = self.zoom ** -1
+        for z in self.ZOOMS:
+            if new < z: break
+        self.zoom_set(z ** -1)
+
+    def zoom_out(self):
+        new = self.zoom ** -1
+        for z in reversed(self.ZOOMS):
+            if new > z: break
+        self.zoom_set(z ** -1)
+
+    def zoom_fit(self):
+        self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT
+
+    def zoom_fill(self):
+        self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_AUTO_FILL
+
+    def zoom_set(self, val):
+        self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_MANUAL
+        self.zoom = clamp(self.ZOOMS[-1] ** -1, val, self.ZOOMS[0] ** -1)
+        self._zoom_change_cb(self)
+        
     def _on_del(self, obj):
         if self.sel: self.sel.delete()
 
     # mouse wheel: zoom
     def _on_mouse_wheel(self, obj, event):
         event.event_flags |= EVAS_EVENT_FLAG_ON_HOLD
-        self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_MANUAL
-        obj.zoom *= 1.1 if event.z == 1 else 0.9
+        new = self.zoom * (1.1 if event.z == 1 else 0.9)
+        self.zoom_set(new)
+
+    def _zoom_change_cb(self, obj):
+        self._zoomed_cb((self.zoom ** -1) * 100)
 
     # mouse drag: pan
     def _on_mouse_down(self, obj, event):
@@ -360,81 +389,82 @@ class StatusBar(Box):
         self.pack_end(self.lb_info)
         self.lb_info.show()
 
-        # zoom button
-        # bt = StdButton(self, icon='zoom')
-        # bt.callback_clicked_add(self._zoom_btn_cb)
-        # self.pack_end(bt)
-        # self.btn_zoom = bt
-
         # edit button
         # bt = StdButton(self, icon='edit')
         # bt.callback_clicked_add(lambda b: ImageEditor(self.app))
         # self.pack_end(bt)
         # self.btn_edit = bt
 
-
-    def update(self, img_path, img_size):
+    def update(self, img_path, img_size, zoom):
         if img_path is None:
-            # self.btn_zoom.hide()
-            # self.btn_edit.hide()
             self.lb_name.text = '<align=left>{}</>'.format(_('No image selected'))
             self.lb_info.text = ''
         else:
-            # self.btn_zoom.show()
-            # self.btn_edit.show()
             self.lb_name.text = '<align=left><b>{0}:</b> {1}</align>'.format(
                                 'Name', os.path.basename(img_path))
             self.lb_info.text = \
-                '    <b>{0}:</b> {1}x{2}    <b>{3}:</b> {4}'.format(
+                '    <b>{}:</b> {}x{}    <b>{}:</b> {}    <b>{}:</b> {:.0f}%'.format(
                     _('Resolution'), img_size[0], img_size[1],
-                    _('Size'), file_hum_size(img_path)
+                    _('Size'), file_hum_size(img_path),
+                    _('Zoom'), zoom
                 )
-
-    def _zoom_btn_cb(self, btn):
-        m = Menu(self.app.win)
-        m.item_add(None, 'Zoom In', 'zoom-in', self._zoom_set, -0.3)
-        m.item_add(None, 'Zoom Out', 'zoom-out', self._zoom_set, +0.3)
-        m.item_separator_add()
-        m.item_add(None, 'Zoom Fit', 'zoom-fit-best', self._zoom_fit_set)
-        m.item_add(None, 'Zoom Fill', 'zoom-fit-best', self._zoom_fill_set)
-        m.item_add(None, 'Zoom 1:1', 'zoom-original', self._zoom_orig_set)
-        m.move(*btn.pos)
-        m.show()
-
-    def _zoom_set(self, menu, item, val):
-        self.app.photo.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_MANUAL
-        self.app.photo.zoom += val
-
-    def _zoom_fit_set(self, menu, item):
-        self.app.photo.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT
-
-    def _zoom_fill_set(self, menu, item):
-        self.app.photo.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_AUTO_FILL
-
-    def _zoom_orig_set(self, menu, item):
-        self.app.photo.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_MANUAL
-        self.app.photo.zoom = 1.0
 
 
 class Controls(Box):
     def __init__(self, parent, action_cb):
         Box.__init__(self, parent, horizontal=True)
 
+        # zoom orig
+        bt = StdButton(self, icon='zoom-original')
+        bt.callback_clicked_add(lambda b: action_cb('zoomorig'))
+        bt.tooltip_text_set(_("Zoom 1:1"))
+        self.pack_end(bt)
+
+        # zoom in
+        bt = StdButton(self, icon='zoom-in')
+        bt.callback_clicked_add(lambda b: action_cb('zoomin'))
+        bt.tooltip_text_set(_("Zoom in"))
+        self.pack_end(bt)
+
+        # zoom out
+        bt = StdButton(self, icon='zoom-out')
+        bt.callback_clicked_add(lambda b: action_cb('zoomout'))
+        bt.tooltip_text_set(_("Zoom out"))
+        self.pack_end(bt)
+
+        # zoom fit
+        bt = StdButton(self, icon='zoom-fit-best')
+        bt.callback_clicked_add(lambda b: action_cb('zoomfit'))
+        bt.tooltip_text_set(_("Zoom fit"))
+        self.pack_end(bt)
+
+        # zoom fill
+        bt = StdButton(self, icon='zoom-fit-best')
+        bt.callback_clicked_add(lambda b: action_cb('zoomfill'))
+        bt.tooltip_text_set(_("Zoom fill"))
+        self.pack_end(bt)
+
+        sep = Separator(self)
+        self.pack_end(sep)
+        
         # prev button
         bt = StdButton(self, icon='go-previous')
         bt.callback_clicked_add(lambda b: action_cb('prev'))
+        bt.tooltip_text_set(_("Previous photo"))
         self.pack_end(bt)
         self.btn_prev = bt
 
         # next button
         bt = StdButton(self, icon='go-next')
         bt.callback_clicked_add(lambda b:action_cb('next'))
+        bt.tooltip_text_set(_("Next photo"))
         self.pack_end(bt)
         self.btn_next = bt
 
         # slideshow play button
         bt = StdButton(self, icon='media-playback-start')
         bt.callback_clicked_add(lambda b: action_cb('slideshow'))
+        bt.tooltip_text_set(_("Slideshow"))
         self.pack_end(bt)
         self.btn_play = bt
 
@@ -597,11 +627,12 @@ class MainWin(StandardWindow):
         self.layout.content_set('tree.swallow', app.tree)
         self.layout.content_set('status.swallow', app.status)
 
+
 class EluminanceApp(object):
     def __init__(self):
 
         self.win = MainWin()
-        self.photo = ScrollablePhotocam(self.win)
+        self.photo = ScrollablePhotocam(self.win, self.photo_zoomed)
         self.controls = Controls(self.win, self.controls_action)
         self.grid = PhotoGrid(self.win, self.grid_selected)
         self.tree = TreeView(self.win, self.tree_selected)
@@ -626,9 +657,12 @@ class EluminanceApp(object):
 
     def update_ui(self):
         self.win.title = 'eluminance - ' + self.current_path
-        self.status.update(self.current_file, self.photo.image_size)
+        self.status.update(self.current_file, self.photo.image_size, self.photo.zoom)
         self.controls.update(self.grid.items_count)
 
+    def photo_zoomed(self, zoom):
+        self.status.update(self.current_file, self.photo.image_size, zoom)
+        
     def tree_selected(self, path):
         self.current_path = path
         self.grid.populate(path)
@@ -646,6 +680,16 @@ class EluminanceApp(object):
             self.grid.prev_select()
         elif action == 'slideshow':
             SlideShow(self)
+        elif action == 'zoomin':
+            self.photo.zoom_in()
+        elif action == 'zoomout':
+            self.photo.zoom_out()
+        elif action == 'zoomfit':
+            self.photo.zoom_fit()
+        elif action == 'zoomfill':
+            self.photo.zoom_fill()
+        elif action == 'zoomorig':
+            self.photo.zoom_set(1.0)
 
 
 def main():
