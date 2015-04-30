@@ -50,7 +50,7 @@ from efl.elementary.photocam import Photocam, ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT, \
 from efl.elementary.scroller import Scrollable, ELM_SCROLLER_POLICY_OFF
 from efl.elementary.slideshow import Slideshow, SlideshowItemClass
 from efl.elementary.spinner import Spinner
-from efl.elementary.thumb import Thumb
+from efl.elementary.thumb import Thumb, ETHUMB_THUMB_CROP
 from efl.elementary.toolbar import Toolbar
 from efl.elementary.window import StandardWindow
 
@@ -189,7 +189,8 @@ class PhotoGrid(Gengrid):
 
     def _gg_content_get(self, gg, part, item_data):
         if part == 'elm.swallow.icon':
-            return Thumb(gg, file=item_data)
+            return Thumb(gg,  style="noframe", aspect=ETHUMB_THUMB_CROP,
+                         file=item_data)
 
     def _gg_text_get(self, gg, part, item_data):
         return os.path.basename(item_data)
