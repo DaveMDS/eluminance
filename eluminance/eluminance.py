@@ -189,7 +189,7 @@ class PhotoGrid(Gengrid):
 
     def _gg_content_get(self, gg, part, item_data):
         if part == 'elm.swallow.icon':
-            return Thumb(gg,  style="noframe", aspect=ETHUMB_THUMB_CROP,
+            return Thumb(gg, style="noframe", aspect=ETHUMB_THUMB_CROP,
                          file=item_data)
 
     def _gg_text_get(self, gg, part, item_data):
@@ -417,39 +417,31 @@ class StatusBar(Box):
 
 
 class Controls(Box):
-    def __init__(self, app, parent):
-        self.app = app
-        self._pref_menu = None
-
+    def __init__(self, parent, action_cb):
         Box.__init__(self, parent, horizontal=True)
 
         # prev button
         bt = StdButton(self, icon='go-previous')
-        bt.callback_clicked_add(lambda b: self.app.grid.prev_select())
+        bt.callback_clicked_add(lambda b: action_cb('prev'))
         self.pack_end(bt)
         self.btn_prev = bt
 
         # next button
         bt = StdButton(self, icon='go-next')
-        bt.callback_clicked_add(lambda b: self.app.grid.next_select())
+        bt.callback_clicked_add(lambda b:action_cb('next'))
         self.pack_end(bt)
         self.btn_next = bt
 
         # slideshow play button
         bt = StdButton(self, icon='media-playback-start')
-        bt.callback_clicked_add(lambda b: SlideShow(self.app))
+        bt.callback_clicked_add(lambda b: action_cb('slideshow'))
         self.pack_end(bt)
         self.btn_play = bt
 
-        # options
-        bt = StdButton(self, icon='preferences-system')
-        bt.callback_clicked_add(self._preferences_btn_cb)
-        self.pack_end(bt)
-
         self.show()
 
-    def update(self):
-        if self.app.grid.items_count > 1:
+    def update(self, items_count):
+        if items_count > 1:
             self.btn_next.disabled = False
             self.btn_prev.disabled = False
             self.btn_play.disabled = False
@@ -457,26 +449,6 @@ class Controls(Box):
             self.btn_next.disabled = True
             self.btn_prev.disabled = True
             self.btn_play.disabled = True
-
-    def _preferences_btn_cb(self, btn):
-        if self._pref_menu is not None:
-            self._pref_menu.delete()
-            return
-            
-        m = Menu(self.app.win)
-        m.callback_dismissed_add(lambda m: m.delete())
-        m.on_del_add(lambda o: setattr(self, '_pref_menu', None))
-
-        it = m.item_add(None, _('Window Layout'))
-        for lay, label in self.app.win.available_layouts:
-            icon = 'arrow-right' if lay == self.app.win.current_layout else None
-            m.item_add(it, label, icon,
-                       lambda m, i, l: self.app.win.apply_layout(l), lay)
-
-        self._pref_menu = m
-        x, y, w, h = btn.geometry
-        m.move(x, y+h+3)
-        m.show()
 
 
 class SlideShow(Slideshow):
@@ -620,23 +592,22 @@ class MainWin(StandardWindow):
 
     def swallow_all(self, app):
         self.layout.content_set('photo.swallow', app.photo)
+        self.layout.content_set('controls.swallow', app.controls)
         self.layout.content_set('grid.swallow', app.grid)
         self.layout.content_set('tree.swallow', app.tree)
         self.layout.content_set('status.swallow', app.status)
-        
 
 class EluminanceApp(object):
     def __init__(self):
 
         self.win = MainWin()
         self.photo = ScrollablePhotocam(self.win)
+        self.controls = Controls(self.win, self.controls_action)
         self.grid = PhotoGrid(self.win, self.grid_selected)
         self.tree = TreeView(self.win, self.tree_selected)
         self.status = StatusBar(self.win)
-
         self.win.swallow_all(self)
 
-        # self.controls = Controls(self, self.win)
 
         self.current_path = os.path.expanduser('~')
         self.current_file = None
@@ -650,23 +621,32 @@ class EluminanceApp(object):
                 if os.path.isfile(path):
                     self.grid.file_select(path)
 
-        self.update_infos()
+        self.update_ui()
         self.win.show()
 
-    def update_infos(self):
+    def update_ui(self):
         self.win.title = 'eluminance - ' + self.current_path
         self.status.update(self.current_file, self.photo.image_size)
-        # self.controls.update()
+        self.controls.update(self.grid.items_count)
 
     def tree_selected(self, path):
         self.current_path = path
         self.grid.populate(path)
-        self.update_infos()
+        self.update_ui()
 
     def grid_selected(self, path):
         self.current_file = path
         self.photo.file_set(path)
-        self.update_infos()
+        self.update_ui()
+
+    def controls_action(self, action):
+        if action == 'next':
+            self.grid.next_select()
+        elif action == 'prev':
+            self.grid.prev_select()
+        elif action == 'slideshow':
+            SlideShow(self)
+
 
 def main():
     elementary.init()

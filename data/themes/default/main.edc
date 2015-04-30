@@ -11,9 +11,6 @@
 #define FIXED_SIZE(_W, _H) \
    min: _W _H; max: _W _H; fixed: 1 1;
 
-#define TILED_HORIZ(_WIDTH) \
-   fill { size { relative: 0.0 1.0; offset: _WIDTH 0; } }
-
 
 images {
    image: "bg_fill.png" COMP;
@@ -71,12 +68,53 @@ collections {
             signal: "mouse,down,1"; source: "photo_events";
             action: STATE_SET "default" 0.0;
             transition: ACCELERATE 0.3 CURRENT;
+            target: "controls.swallow";
             target: "grid.swallow";
             target: "tree.swallow";
          }
 
+         //// Controls
+         part { name: "controls.swallow"; type: SWALLOW;
+            description { state: "default" 0.0;
+               rel1.relative: 0.0 0.0;
+               rel2.relative: 1.0 0.0;
+               align: 0.0 1.0;
+               fixed: 1 1;
+            }
+            description { state: "visible" 0.0;
+               inherit: "default" 0.0;
+               align: 0.0 0.0;
+            }
+         }
+         part { name: "controls_event"; type: RECT;
+            repeat_events: 1;
+            description { state: "default" 0.0;
+               rel1.relative: 0.25 0.0;
+               rel2.relative: 0.75 0.0;
+               rel2.offset: 0.0 32;
+               color: 0 0 0 0;
+            }
+         }
+         program { name: "show_controls";
+            signal: "mouse,in"; source: "controls_event";
+            action: STATE_SET "visible" 0.0;
+            transition: DECELERATE 0.3 CURRENT;
+            target: "controls.swallow";
+            after: "stop_hiding";
+         }
+         program { name: "hide_controls";
+            signal: "mouse,out"; source: "controls_event";
+            action: STATE_SET "default" 0.0;
+            transition: ACCELERATE 0.3 CURRENT;
+            target: "controls.swallow";
+            in: 1.0 0;
+         }
+         program { name: "stop_hiding";
+            action: ACTION_STOP;
+            target: "hide_controls";
+         }
+
          //// Grid (thumbnails)
-         SHOW("grid_events")
          part { name: "grid.swallow"; type: SWALLOW;
             description { state: "default" 0.0;
                rel1.relative: 1.0 0.0;
@@ -108,7 +146,6 @@ collections {
          }
 
          //// Tree swallow
-         SHOW("tree_events")
          part { name: "tree.swallow"; type: SWALLOW;
             description { state: "default" 0.0;
                rel2.relative: 0.0 0.0;
@@ -140,7 +177,6 @@ collections {
          }
 
          //// Statusbar
-         SHOW("status")
          part { name: "status"; type: IMAGE;
             description { state: "default" 0.0;
                rel1.relative: 0.0 1.0;
