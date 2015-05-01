@@ -229,8 +229,8 @@ class PhotoGrid(Gengrid):
 class ScrollablePhotocam(Photocam, Scrollable):
     ZOOMS = [0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.75, 1.0, 1.5,
              2.0, 3.0, 5.0, 7.5, 10, 15, 20, 30, 50, 75, 100]
-    def __init__(self, parent, zoomed_cb):
-        self._zoomed_cb = zoomed_cb
+    def __init__(self, parent, changed_cb):
+        self._changed_cb = changed_cb
         Photocam.__init__(self, parent, paused=True,
                           zoom_mode=ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT)
         self.policy = ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_OFF
@@ -241,10 +241,6 @@ class ScrollablePhotocam(Photocam, Scrollable):
         self.on_del_add(self._on_del)
         self._drag_start_geom = None
         self.sel = None
-
-    def file_set(self, file):
-        self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT
-        Photocam.file_set(self, file)
 
     def zoom_in(self):
         new = self.zoom ** -1
@@ -279,7 +275,7 @@ class ScrollablePhotocam(Photocam, Scrollable):
         self.zoom_set(new)
 
     def _zoom_change_cb(self, obj):
-        self._zoomed_cb((self.zoom ** -1) * 100)
+        self._changed_cb((self.zoom ** -1) * 100)
 
     # mouse drag: pan
     def _on_mouse_down(self, obj, event):
@@ -376,12 +372,11 @@ class ScrollablePhotocam(Photocam, Scrollable):
 class StatusBar(Box):
     def __init__(self, parent):
         Box.__init__(self, parent, horizontal=True,
-                     size_hint_expand=EXPAND_HORIZ,
-                     size_hint_fill=FILL_HORIZ)
+                     size_hint_expand=EXPAND_HORIZ, size_hint_fill=FILL_HORIZ)
 
         self.lb_name = Label(self, ellipsis=True,
-                            size_hint_expand=EXPAND_HORIZ,
-                            size_hint_fill=FILL_HORIZ)
+                    size_hint_expand=EXPAND_HORIZ, size_hint_fill=FILL_HORIZ,
+                    text='<align=left>{}</>'.format(_('No image selected')))
         self.pack_end(self.lb_name)
         self.lb_name.show()
         
@@ -396,18 +391,14 @@ class StatusBar(Box):
         # self.btn_edit = bt
 
     def update(self, img_path, img_size, zoom):
-        if img_path is None:
-            self.lb_name.text = '<align=left>{}</>'.format(_('No image selected'))
-            self.lb_info.text = ''
-        else:
-            self.lb_name.text = '<align=left><b>{0}:</b> {1}</align>'.format(
-                                'Name', os.path.basename(img_path))
-            self.lb_info.text = \
-                '    <b>{}:</b> {}x{}    <b>{}:</b> {}    <b>{}:</b> {:.0f}%'.format(
-                    _('Resolution'), img_size[0], img_size[1],
-                    _('Size'), file_hum_size(img_path),
-                    _('Zoom'), zoom
-                )
+        self.lb_name.text = '<align=left><b>{0}:</b> {1}</align>'.format(
+                            _('File'), os.path.basename(img_path))
+        self.lb_info.text = \
+            '    <b>{}:</b> {}x{}    <b>{}:</b> {}    <b>{}:</b> {:.0f}%'.format(
+                _('Resolution'), img_size[0], img_size[1],
+                _('Size'), file_hum_size(img_path),
+                _('Zoom'), zoom
+            )
 
 
 class Controls(Box):
@@ -632,7 +623,7 @@ class EluminanceApp(object):
     def __init__(self):
 
         self.win = MainWin()
-        self.photo = ScrollablePhotocam(self.win, self.photo_zoomed)
+        self.photo = ScrollablePhotocam(self.win, self.photo_changed)
         self.controls = Controls(self.win, self.controls_action)
         self.grid = PhotoGrid(self.win, self.grid_selected)
         self.tree = TreeView(self.win, self.tree_selected)
@@ -652,26 +643,24 @@ class EluminanceApp(object):
         else:
             self.grid.populate(self.current_path)
 
-        self.update_ui()
         self.win.show()
 
-    def update_ui(self):
-        self.win.title = 'eluminance - ' + self.current_path
-        self.status.update(self.current_file, self.photo.image_size, self.photo.zoom)
-        self.controls.update(self.grid.items_count)
-
-    def photo_zoomed(self, zoom):
-        self.status.update(self.current_file, self.photo.image_size, zoom)
-        
     def tree_selected(self, path):
+        # print("TREE SEL", path)
         self.current_path = path
         self.grid.populate(path)
-        self.update_ui()
 
     def grid_selected(self, path):
+        # print("GRID SEL", path)
         self.current_file = path
         self.photo.file_set(path)
-        self.update_ui()
+        self.photo.zoom_fit()
+
+    def photo_changed(self, zoom):
+        # print("ZOOM CHANGED", zoom)
+        self.win.title = 'eluminance - ' + self.current_path
+        self.status.update(self.current_file, self.photo.image_size, zoom)
+        self.controls.update(self.grid.items_count)
 
     def controls_action(self, action):
         if action == 'next':
