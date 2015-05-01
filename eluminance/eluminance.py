@@ -639,11 +639,9 @@ class EluminanceApp(object):
         self.status = StatusBar(self.win)
         self.win.swallow_all(self)
 
-
         self.current_path = os.path.expanduser('~')
         self.current_file = None
         self.tree.populate(self.current_path)
-        self.grid.populate(self.current_path) # TODO only if not args !!
 
         if len(sys.argv) > 1:
             path = os.path.abspath(sys.argv[1])
@@ -651,6 +649,8 @@ class EluminanceApp(object):
                 self.tree.expand_to_folder(path)
                 if os.path.isfile(path):
                     self.grid.file_select(path)
+        else:
+            self.grid.populate(self.current_path)
 
         self.update_ui()
         self.win.show()
