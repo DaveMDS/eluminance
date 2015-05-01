@@ -242,29 +242,28 @@ class ScrollablePhotocam(Photocam, Scrollable):
         self._drag_start_geom = None
         self.sel = None
 
-    def zoom_in(self):
-        new = self.zoom ** -1
-        for z in self.ZOOMS:
-            if new < z: break
-        self.zoom_set(z ** -1)
-
-    def zoom_out(self):
-        new = self.zoom ** -1
-        for z in reversed(self.ZOOMS):
-            if new > z: break
-        self.zoom_set(z ** -1)
-
-    def zoom_fit(self):
-        self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT
-
-    def zoom_fill(self):
-        self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_AUTO_FILL
-
     def zoom_set(self, val):
-        self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_MANUAL
-        self.zoom = clamp(self.ZOOMS[-1] ** -1, val, self.ZOOMS[0] ** -1)
-        self._zoom_change_cb(self)
-        
+        if isinstance(val, float):
+            self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_MANUAL
+            self.zoom = clamp(self.ZOOMS[-1] ** -1, val, self.ZOOMS[0] ** -1)
+            self._zoom_change_cb(self)
+        elif val == 'zoomorig':
+            self.zoom_set(1.0)
+        elif val == 'zoomfill':
+            self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_AUTO_FILL
+        elif val == 'zoomfit':
+            self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT
+        elif val == 'zoomin':
+            old = self.zoom ** -1
+            for z in self.ZOOMS:
+                if old < z: break
+            self.zoom_set(z ** -1)
+        elif val == 'zoomout':
+            old = self.zoom ** -1
+            for z in reversed(self.ZOOMS):
+                if old > z: break
+            self.zoom_set(z ** -1)
+
     def _on_del(self, obj):
         if self.sel: self.sel.delete()
 
@@ -665,16 +664,8 @@ class EluminanceApp(object):
             self.grid.prev_select()
         elif action == 'slideshow':
             SlideShow(self)
-        elif action == 'zoomin':
-            self.photo.zoom_in()
-        elif action == 'zoomout':
-            self.photo.zoom_out()
-        elif action == 'zoomfit':
-            self.photo.zoom_fit()
-        elif action == 'zoomfill':
-            self.photo.zoom_fill()
-        elif action == 'zoomorig':
-            self.photo.zoom_set(1.0)
+        elif action in ('zoomin', 'zoomout', 'zoomfit', 'zoomfill', 'zoomorig'):
+            self.photo.zoom_set(action)
 
 
 def main():
