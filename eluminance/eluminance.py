@@ -376,7 +376,7 @@ class StatusBar(Box):
 
         self.lb_name = Label(self, ellipsis=True,
                     size_hint_expand=EXPAND_HORIZ, size_hint_fill=FILL_HORIZ,
-                    text='<align=left>{}</>'.format(_('No image selected')))
+                    text='<align=left>{}</align>'.format(_('No image selected')))
         self.pack_end(self.lb_name)
         self.lb_name.show()
         
@@ -392,13 +392,12 @@ class StatusBar(Box):
 
     def update(self, img_path, img_size, zoom):
         self.lb_name.text = '<align=left><b>{0}:</b> {1}</align>'.format(
-                            _('File'), os.path.basename(img_path))
+                                _('File'), os.path.basename(img_path))
         self.lb_info.text = \
-            '    <b>{}:</b> {}x{}    <b>{}:</b> {}    <b>{}:</b> {:.0f}%'.format(
+            '<b>{}:</b> {}x{}    <b>{}:</b> {}    <b>{}:</b> {:.0f}%'.format(
                 _('Resolution'), img_size[0], img_size[1],
                 _('Size'), file_hum_size(img_path),
-                _('Zoom'), zoom
-            )
+                _('Zoom'), zoom)
 
 
 class Controls(Box):
@@ -646,18 +645,15 @@ class EluminanceApp(object):
         self.win.show()
 
     def tree_selected(self, path):
-        # print("TREE SEL", path)
         self.current_path = path
         self.grid.populate(path)
 
     def grid_selected(self, path):
-        # print("GRID SEL", path)
         self.current_file = path
         self.photo.file_set(path)
         self.photo.zoom_fit()
 
     def photo_changed(self, zoom):
-        # print("ZOOM CHANGED", zoom)
         self.win.title = 'eluminance - ' + self.current_path
         self.status.update(self.current_file, self.photo.image_size, zoom)
         self.controls.update(self.grid.items_count)
