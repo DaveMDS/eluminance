@@ -650,7 +650,7 @@ class EluminanceApp(object):
     def grid_selected(self, path):
         self.current_file = path
         self.photo.file_set(path)
-        self.photo.zoom_fit()
+        self.photo.zoom_set('zoomfit')
 
     def photo_changed(self, zoom):
         self.win.title = 'eluminance - ' + self.current_path
