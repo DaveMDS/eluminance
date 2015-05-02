@@ -399,77 +399,6 @@ class StatusBar(Box):
                 _('Zoom'), zoom)
 
 
-class Controls(Box):
-    def __init__(self, parent, action_cb):
-        Box.__init__(self, parent, horizontal=True)
-
-        # zoom orig
-        bt = StdButton(self, icon='zoom-original')
-        bt.callback_clicked_add(lambda b: action_cb('zoomorig'))
-        bt.tooltip_text_set(_("Zoom 1:1"))
-        self.pack_end(bt)
-
-        # zoom in
-        bt = StdButton(self, icon='zoom-in')
-        bt.callback_clicked_add(lambda b: action_cb('zoomin'))
-        bt.tooltip_text_set(_("Zoom in"))
-        self.pack_end(bt)
-
-        # zoom out
-        bt = StdButton(self, icon='zoom-out')
-        bt.callback_clicked_add(lambda b: action_cb('zoomout'))
-        bt.tooltip_text_set(_("Zoom out"))
-        self.pack_end(bt)
-
-        # zoom fit
-        bt = StdButton(self, icon='zoom-fit-best')
-        bt.callback_clicked_add(lambda b: action_cb('zoomfit'))
-        bt.tooltip_text_set(_("Zoom fit"))
-        self.pack_end(bt)
-
-        # zoom fill
-        bt = StdButton(self, icon='zoom-fit-best')
-        bt.callback_clicked_add(lambda b: action_cb('zoomfill'))
-        bt.tooltip_text_set(_("Zoom fill"))
-        self.pack_end(bt)
-
-        sep = Separator(self)
-        self.pack_end(sep)
-        
-        # prev button
-        bt = StdButton(self, icon='go-previous')
-        bt.callback_clicked_add(lambda b: action_cb('prev'))
-        bt.tooltip_text_set(_("Previous photo"))
-        self.pack_end(bt)
-        self.btn_prev = bt
-
-        # next button
-        bt = StdButton(self, icon='go-next')
-        bt.callback_clicked_add(lambda b:action_cb('next'))
-        bt.tooltip_text_set(_("Next photo"))
-        self.pack_end(bt)
-        self.btn_next = bt
-
-        # slideshow play button
-        bt = StdButton(self, icon='media-playback-start')
-        bt.callback_clicked_add(lambda b: action_cb('slideshow'))
-        bt.tooltip_text_set(_("Slideshow"))
-        self.pack_end(bt)
-        self.btn_play = bt
-
-        self.show()
-
-    def update(self, items_count):
-        if items_count > 1:
-            self.btn_next.disabled = False
-            self.btn_prev.disabled = False
-            self.btn_play.disabled = False
-        else:
-            self.btn_next.disabled = True
-            self.btn_prev.disabled = True
-            self.btn_play.disabled = True
-
-
 class SlideShow(Slideshow):
     NOTIFY_TIMEOUT = 3.0
     def __init__(self, app):
@@ -611,10 +540,34 @@ class MainWin(StandardWindow):
 
     def swallow_all(self, app):
         self.layout.content_set('photo.swallow', app.photo)
-        self.layout.content_set('controls.swallow', app.controls)
         self.layout.content_set('grid.swallow', app.grid)
         self.layout.content_set('tree.swallow', app.tree)
         self.layout.content_set('status.swallow', app.status)
+
+    def populate_controls(self, action_cb):
+        buttons = [ # (label, icon, action)
+            (_('Zoom 1:1'), 'zoom-original', 'zoomorig'),
+            (_('Zoom in'), 'zoom-in', 'zoomin'),
+            (_('Zoom out'), 'zoom-out', 'zoomout'),
+            (_('Zoom fit'), 'zoom-fit-best', 'zoomfit'),
+            (_('Zoom fill'), 'zoom-fit-best', 'zoomfill'),
+            ('sep', None, None),
+            (_('Previous photo'), 'go-previous', 'prev'),
+            (_('Next photo'), 'go-next', 'next'),
+            (_('Slideshow'), 'media-playback-start', 'slideshow'),
+        ]
+
+        for label, icon, action in buttons:
+            if label == 'sep':
+                self.layout.box_append('controls.box', Separator(self))
+            else:
+                bt = StdButton(self, icon=icon)
+                bt.callback_clicked_add(self._buttons_cb, action_cb, action)
+                bt.tooltip_text_set(label)
+                self.layout.box_append('controls.box', bt)
+
+    def _buttons_cb(self, bt, func, action):
+        func(action)
 
 
 class EluminanceApp(object):
@@ -622,11 +575,11 @@ class EluminanceApp(object):
 
         self.win = MainWin()
         self.photo = ScrollablePhotocam(self.win, self.photo_changed)
-        self.controls = Controls(self.win, self.controls_action)
         self.grid = PhotoGrid(self.win, self.grid_selected)
         self.tree = TreeView(self.win, self.tree_selected)
         self.status = StatusBar(self.win)
         self.win.swallow_all(self)
+        self.win.populate_controls(self.controls_action)
 
         self.current_path = os.path.expanduser('~')
         self.current_file = None
@@ -655,7 +608,6 @@ class EluminanceApp(object):
     def photo_changed(self, zoom):
         self.win.title = 'eluminance - ' + self.current_path
         self.status.update(self.current_file, self.photo.image_size, zoom)
-        self.controls.update(self.grid.items_count)
 
     def controls_action(self, action):
         if action == 'next':

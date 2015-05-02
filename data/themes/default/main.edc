@@ -59,7 +59,6 @@ collections {
          }
 
          //// Tree  -----------------------------------------------------------
-         SHOW("tree_events")
          part { name: "tree_clip"; type: RECT;
             description { state: "default" 0.0;
                rel2.relative: 0.0 0.0;
@@ -68,7 +67,7 @@ collections {
                min: 200 0;
                fixed: 1 1;
                align: 1.0 0.0;
-               color: 0 0 0 0;
+               color: 255 255 255 0;
             }
             description { state: "visible" 0.0;
                inherit: "default" 0.0;
@@ -117,7 +116,7 @@ collections {
                min: 150 0;
                fixed: 1 1;
                align: 0.0 0.0;
-               color: 0 0 0 0;
+               color: 255 255 255 0;
             }
             description { state: "visible" 0.0;
                inherit: "default" 0.0;
@@ -158,16 +157,36 @@ collections {
          }
 
          //// Controls  -------------------------------------------------------
-         part { name: "controls.swallow"; type: SWALLOW;
+         part { name: "controls_clip"; type: RECT;
             description { state: "default" 0.0;
-               rel1.relative: 0.0 0.0;
-               rel2.relative: 1.0 0.0;
-               align: 0.0 1.0;
+               color: 255 255 255 0;
+            }
+            description { state: "visible" 0.0;
+               color: 255 255 255 255;
+            }
+         }
+         part { name: "controls_bg"; type: RECT;
+            clip_to: "controls_clip";
+            description { state: "default" 0.0;
+               rel1.to: "controls.box";
+               rel2.to: "controls.box";
+               rel1.offset: -6 0;
+               rel2.offset: 5 5;
+               color: 100 100 100 100;
+            }
+         }
+         part { name: "controls.box"; type: BOX;
+            clip_to: "controls_clip";
+            description { state: "default" 0.0;
+               rel1.relative: 0.5 0.0;
+               rel2.relative: 0.5 0.0;
+               align: 0.5 1.0;
                fixed: 1 1;
+               box.min: 1 1;
             }
             description { state: "visible" 0.0;
                inherit: "default" 0.0;
-               align: 0.0 0.0;
+               align: 0.5 0.0;
             }
          }
          part { name: "controls_event"; type: RECT;
@@ -182,18 +201,20 @@ collections {
          program { name: "show_controls";
             signal: "mouse,in"; source: "controls_event";
             action: STATE_SET "visible" 0.0;
-            transition: DECELERATE 0.3 CURRENT;
-            target: "controls.swallow";
-            after: "stop_hiding";
+            transition: DECEL 0.2;
+            target: "controls.box";
+            target: "controls_clip";
          }
          program { name: "hide_controls";
             signal: "mouse,out"; source: "controls_event";
             action: STATE_SET "default" 0.0;
-            transition: ACCELERATE 0.3 CURRENT;
-            target: "controls.swallow";
+            transition: ACCEL 0.2;
+            target: "controls.box";
+            target: "controls_clip";
             in: 1.0 0;
          }
          program { name: "stop_hiding";
+            signal: "mouse,in"; source: "controls_event";
             action: ACTION_STOP;
             target: "hide_controls";
          }
