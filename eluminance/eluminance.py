@@ -47,9 +47,13 @@ from efl.elementary.photocam import Photocam, ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT, \
     ELM_PHOTOCAM_ZOOM_MODE_AUTO_FILL, ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT_IN, \
     ELM_PHOTOCAM_ZOOM_MODE_MANUAL
 from efl.elementary.scroller import Scrollable, ELM_SCROLLER_POLICY_OFF
+from efl.elementary.scroller import Scroller, \
+    ELM_SCROLLER_MOVEMENT_BLOCK_VERTICAL, \
+    ELM_SCROLLER_MOVEMENT_BLOCK_HORIZONTAL
 from efl.elementary.separator import Separator
 from efl.elementary.slideshow import Slideshow, SlideshowItemClass
 from efl.elementary.spinner import Spinner
+from efl.elementary.table import Table
 from efl.elementary.thumb import Thumb, ETHUMB_THUMB_CROP
 from efl.elementary.toolbar import Toolbar
 from efl.elementary.window import StandardWindow
@@ -224,6 +228,104 @@ class PhotoGrid(Gengrid):
                 it.show()
                 return
             it = it.next
+
+
+class ScrollablePhoto(Scroller):
+    ZOOMS = [5, 7, 10, 15, 20, 30, 50, 75, 100, 150, 200, 300,
+             500, 750, 1000, 1500, 2000, 3000, 5000, 7500, 10000]
+    def __init__(self, parent, changed_cb):
+        self._changed_cb = changed_cb
+        self.image_size = 0, 0 # original image pixel size
+        self.fit = True # keep image fitted on resize
+
+        Scroller.__init__(self, parent, gravity=(0.5, 0.5),
+            policy=(ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_OFF),
+            movement_block=ELM_SCROLLER_MOVEMENT_BLOCK_VERTICAL |
+                           ELM_SCROLLER_MOVEMENT_BLOCK_HORIZONTAL)
+        self.on_mouse_wheel_add(self._on_mouse_wheel)
+        self.on_mouse_down_add(self._on_mouse_down)
+        self.on_mouse_up_add(self._on_mouse_up)
+        self.on_resize_add(self._on_resize)
+
+        self.img = Image(self, preload_disabled=True)
+        self.img.show()
+
+        # table help to keep the image centered in the scroller
+        tb = Table(self, size_hint_expand=EXPAND_BOTH, size_hint_fill=FILL_BOTH)
+        tb.pack(self.img, 0, 0, 1, 1)
+        self.content = tb
+
+    def file_set(self, file):
+        self.img.file_set(file)
+        self.image_size = self.img.object_size
+
+    def zoom_set(self, val):
+        self.fit = False
+        if val == 'zoomfit':
+            self.fit = True
+            self._on_resize(self)
+
+        elif val == 'zoomorig':
+            self.zoom = 100
+
+        elif val == 'zoomin':
+            cur = self.zoom + 1
+            for z in self.ZOOMS:
+                if cur < z: break
+            self.zoom = z
+
+        elif val == 'zoomout':
+            cur = self.zoom - 1
+            for z in reversed(self.ZOOMS):
+                if cur > z: break
+            self.zoom = z
+
+    @property
+    def zoom(self):
+        return (float(self.img.size[0]) / float(self.image_size[0])) * 100
+
+    @zoom.setter
+    def zoom(self, val):
+        z = clamp(self.ZOOMS[0], val, self.ZOOMS[-1]) / 100.0
+        w, h = self.image_size[0] * z, self.image_size[1] * z
+        self.img.size_hint_min = w, h
+        self.img.size_hint_max = w, h
+
+        self._changed_cb(self.zoom)
+
+    # mouse wheel: zoom
+    def _on_mouse_wheel(self, obj, event):
+        self.fit = False
+        self.zoom *= 0.9 if event.z == 1 else 1.1
+
+    # mouse drag: pan
+    def _on_mouse_down(self, obj, event):
+        if event.button in (2, 3):
+            self._drag_start_region = obj.region
+            self._drag_start_x, self._drag_start_y = event.position.canvas
+            obj.on_mouse_move_add(self._on_mouse_move)
+
+    def _on_mouse_up(self, obj, event):
+        if event.button in (2, 3):
+            obj.on_mouse_move_del(self._on_mouse_move)
+
+    def _on_mouse_move(self, obj, event):
+        x, y = event.position.canvas
+        dx, dy = self._drag_start_x - x, self._drag_start_y - y
+        x, y, w, h = self._drag_start_region
+        obj.region_show(x + dx, y + dy, w, h)
+
+    # scroller resize: keep the image fitted
+    def _on_resize(self, obj):
+        if self.fit:
+            cw, ch = self.region[2], self.region[3]
+            if cw <= 0 or ch <= 0: return
+            iw, ih = self.image_size
+            if iw <= 0 or ih <= 0: return
+            zx = float(cw) / float(iw)
+            zy = float(ch) / float(ih)
+            zoom = zx if zx < zy else zy
+            self.zoom = zoom * 100
 
 
 class ScrollablePhotocam(Photocam, Scrollable):
@@ -576,7 +678,8 @@ class EluminanceApp(object):
     def __init__(self):
 
         self.win = MainWin()
-        self.photo = ScrollablePhotocam(self.win, self.photo_changed)
+        # self.photo = ScrollablePhotocam(self.win, self.photo_changed)
+        self.photo = ScrollablePhoto(self.win, self.photo_changed)
         self.grid = PhotoGrid(self.win, self.grid_selected)
         self.tree = TreeView(self.win, self.tree_selected)
         self.status = StatusBar(self.win)
