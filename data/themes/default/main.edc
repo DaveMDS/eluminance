@@ -25,8 +25,7 @@ collections {
    /// MAIN UI ////////////////////////////////////////////////////////////////
    group { name: "eluminance/main";
       parts {
-
-         //// Background
+         //// Background  -----------------------------------------------------
          part { name: "bg_fill"; mouse_events: 0;
             description { state: "default" 0.0;
                fixed: 1 1;
@@ -53,27 +52,112 @@ collections {
             }
          }
 
-         //// Photocam
+         //// Photocam  -------------------------------------------------------
          part { name: "photo.swallow"; type: SWALLOW;
             description { state: "default" 0.0;
             }
          }
-         part { name: "photo_events"; type: RECT;
+
+         //// Tree  -----------------------------------------------------------
+         SHOW("tree_events")
+         part { name: "tree_clip"; type: RECT;
+            description { state: "default" 0.0;
+               rel2.relative: 0.0 0.0;
+               rel2.to_y: "status";
+               rel2.offset: -1 0;
+               min: 200 0;
+               fixed: 1 1;
+               align: 1.0 0.0;
+               color: 0 0 0 0;
+            }
+            description { state: "visible" 0.0;
+               inherit: "default" 0.0;
+               align: 0.0 0.0;
+               color: 255 255 255 255;
+            }
+         }
+         part { name: "tree_events"; type: RECT;
             repeat_events: 1;
             description { state: "default" 0.0;
                color: 0 0 0 0;
             }
          }
-         program { name: "show photo";
-            signal: "mouse,down,1"; source: "photo_events";
+         part { name: "tree.swallow"; type: SWALLOW;
+            clip_to: "tree_clip";
+            description { state: "default" 0.0;
+               rel1.to: "tree_clip";
+               rel2.to: "tree_clip";
+               fixed: 1 1;
+            }
+         }
+         program { // show tree and grid
+            signal: "mouse,down,1"; source: "tree_events";
+            filter: "tree_clip" "default";
+            action: STATE_SET "visible" 0.0;
+            transition: DECEL 0.3;
+            target: "grid_clip";
+            target: "tree_clip";
+         }
+         program { // hide tree and grid
+            signal: "mouse,down,1"; source: "tree_events";
+            filter: "tree_clip" "visible";
             action: STATE_SET "default" 0.0;
-            transition: ACCELERATE 0.3 CURRENT;
-            target: "controls.swallow";
-            target: "grid.swallow";
-            target: "tree.swallow";
+            transition: ACCELERATE 0.3;
+            target: "grid_clip";
+            target: "tree_clip";
          }
 
-         //// Controls
+         //// Grid  ----------------------------------------------------------
+         part { name: "grid_clip"; type: RECT;
+            description { state: "default" 0.0;
+               rel1.relative: 1.0 0.0;
+               rel2.to_y: "status";
+               rel2.relative: 1.0 0.0;
+               rel2.offset: -1 0;
+               min: 150 0;
+               fixed: 1 1;
+               align: 0.0 0.0;
+               color: 0 0 0 0;
+            }
+            description { state: "visible" 0.0;
+               inherit: "default" 0.0;
+               align: 1.0 0.0;
+               color: 255 255 255 255;
+            }
+         }
+         part { name: "grid.swallow"; type: SWALLOW;
+            clip_to: "grid_clip";
+            description { state: "default" 0.0;
+               rel1.to: "grid_clip";
+               rel2.to: "grid_clip";
+               fixed: 1 1;
+            }
+         }
+         part { name: "grid_events"; type: RECT;
+            repeat_events: 1;
+            description { state: "default" 0.0;
+               rel1.to: "grid_clip";
+               rel2.to: "grid_clip";
+               rel1.offset: -50 0;
+               color: 0 0 0 0;
+               fixed: 1 1;
+            }
+         }
+         program { // show grid
+            signal: "mouse,in"; source: "grid_events";
+            action: STATE_SET "visible" 0.0;
+            transition: DECEL 0.3 CURRENT;
+            target: "grid_clip";
+         }
+         program { // hide grid
+            signal: "mouse,out"; source: "grid_events";
+            filter: "tree_clip" "default"; // do not hide if tree is visble
+            action: STATE_SET "default" 0.0;
+            transition: ACCEL 0.3 CURRENT;
+            target: "grid_clip";
+         }
+
+         //// Controls  -------------------------------------------------------
          part { name: "controls.swallow"; type: SWALLOW;
             description { state: "default" 0.0;
                rel1.relative: 0.0 0.0;
@@ -114,69 +198,7 @@ collections {
             target: "hide_controls";
          }
 
-         //// Grid (thumbnails)
-         part { name: "grid.swallow"; type: SWALLOW;
-            description { state: "default" 0.0;
-               rel1.relative: 1.0 0.0;
-               rel2.relative: 1.0 0.0;
-               rel2.offset: -1 0;
-               rel2.to_y: "status";
-               min: 150 0;
-               align: 0.0 0.0;
-               fixed: 1 1;
-            }
-            description { state: "visible" 0.0;
-               inherit: "default" 0.0;
-               align: 1.0 0.0;
-            }
-         }
-         part { name: "grid_events"; type: RECT;
-            repeat_events: 1;
-            description { state: "default" 0.0;
-               rel1.relative: 1.0 0.0;
-               rel1.offset: -50 0;
-               color: 0 0 0 0;
-            }
-         }
-         program { name: "show_grid";
-            signal: "mouse,in"; source: "grid_events";
-            action: STATE_SET "visible" 0.0;
-            transition: DECELERATE 0.3 CURRENT;
-            target: "grid.swallow";
-         }
-
-         //// Tree swallow
-         part { name: "tree.swallow"; type: SWALLOW;
-            description { state: "default" 0.0;
-               rel2.relative: 0.0 0.0;
-               rel2.to_y: "status";
-               rel2.offset: -1 0;
-               min: 200 0;
-               align: 1.0 0.0;
-               fixed: 1 1;
-            }
-            description { state: "visible" 0.0;
-               inherit: "default" 0.0;
-               align: 0.0 0.0;
-            }
-         }
-         part { name: "tree_events"; type: RECT;
-            repeat_events: 1;
-            description { state: "default" 0.0;
-               rel2.relative: 0.0 1.0;
-               rel2.offset: 50 0;
-               color: 0 0 0 0;
-            }
-         }
-         program { name: "show_tree";
-            signal: "mouse,in"; source: "tree_events";
-            action: STATE_SET "visible" 0.0;
-            transition: DECELERATE 0.3 CURRENT;
-            target: "tree.swallow";
-            target: "grid.swallow";
-         }
-
-         //// Statusbar
+         //// Statusbar  -----------------------------------------------------
          part { name: "status"; type: IMAGE;
             description { state: "default" 0.0;
                rel1.relative: 0.0 1.0;
@@ -206,7 +228,7 @@ collections {
                }
             }
          }
-         
+
       }
    }
 
