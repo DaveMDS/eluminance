@@ -278,12 +278,14 @@ class ScrollablePhotocam(Photocam, Scrollable):
 
     # mouse drag: pan
     def _on_mouse_down(self, obj, event):
-        self._drag_start_region = obj.region
-        self._drag_start_x, self._drag_start_y = event.position.canvas
-        obj.on_mouse_move_add(self._on_mouse_move)
+        if event.button in (2, 3):
+            self._drag_start_region = obj.region
+            self._drag_start_x, self._drag_start_y = event.position.canvas
+            obj.on_mouse_move_add(self._on_mouse_move)
 
     def _on_mouse_up(self, obj, event):
-        obj.on_mouse_move_del(self._on_mouse_move)
+        if event.button in (2, 3):
+            obj.on_mouse_move_del(self._on_mouse_move)
 
     def _on_mouse_move(self, obj, event):
         if self._drag_start_geom is None:
