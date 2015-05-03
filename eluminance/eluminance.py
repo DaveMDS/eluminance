@@ -650,11 +650,11 @@ class MainWin(StandardWindow):
 
     def populate_controls(self, action_cb):
         buttons = [ # (label, icon, action)
-            (_('Zoom 1:1'), 'zoom-original', 'zoomorig'),
             (_('Zoom in'), 'zoom-in', 'zoomin'),
             (_('Zoom out'), 'zoom-out', 'zoomout'),
+            (_('Zoom 1:1'), 'zoom-original', 'zoomorig'),
             (_('Zoom fit'), 'zoom-fit-best', 'zoomfit'),
-            (_('Zoom fill'), 'zoom-fit-best', 'zoomfill'),
+            # (_('Zoom fill'), 'zoom-fit-best', 'zoomfill'),
             ('sep', None, None),
             (_('Previous photo'), 'go-previous', 'prev'),
             (_('Next photo'), 'go-next', 'next'),
