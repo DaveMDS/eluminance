@@ -57,6 +57,33 @@ collections {
             description { state: "default" 0.0;
             }
          }
+         part { name: "photo_events"; type: RECT;
+            repeat_events: 1;
+            description { state: "default" 0.0;
+               color: 0 0 0 0;
+            }
+            description { state: "visible" 0.0; // used to implement the toggle
+               color: 0 0 0 0;
+            }
+         }
+         program { // show tree and grid (permanently)
+            signal: "mouse,down,3"; source: "photo_events";
+            filter: "photo_events" "default";
+            action: STATE_SET "visible" 0.0;
+            transition: DECEL 0.3;
+            target: "photo_events";
+            target: "grid_clip";
+            target: "tree_clip";
+         }
+         program { // hide tree and grid
+            signal: "mouse,down,3"; source: "photo_events";
+            filter: "photo_events" "visible";
+            action: STATE_SET "default" 0.0;
+            transition: ACCELERATE 0.3;
+            target: "photo_events";
+            target: "grid_clip";
+            target: "tree_clip";
+         }
 
          //// Tree  -----------------------------------------------------------
          part { name: "tree_clip"; type: RECT;
@@ -75,12 +102,6 @@ collections {
                color: 255 255 255 255;
             }
          }
-         part { name: "tree_events"; type: RECT;
-            repeat_events: 1;
-            description { state: "default" 0.0;
-               color: 0 0 0 0;
-            }
-         }
          part { name: "tree.swallow"; type: SWALLOW;
             clip_to: "tree_clip";
             description { state: "default" 0.0;
@@ -89,22 +110,34 @@ collections {
                fixed: 1 1;
             }
          }
+         part { name: "tree_event"; type: RECT;
+            repeat_events: 1;
+            description { state: "default" 0.0;
+               rel1.to: "tree_clip";
+               rel2.to: "tree_clip";
+               rel2.offset: 50 -1;
+               color: 0 0 0 0;
+               fixed: 1 1;
+            }
+         }
          program { // show tree and grid
-            signal: "mouse,down,1"; source: "tree_events";
-            filter: "tree_clip" "default";
+            signal: "mouse,in"; source: "tree_event";
             action: STATE_SET "visible" 0.0;
-            transition: DECEL 0.3;
-            target: "grid_clip";
+            transition: DECEL 0.3 CURRENT;
             target: "tree_clip";
+            // target: "grid_clip";
+            // CURRENT is broken for multiple targets, thus use after here...
+            after: "show_grid";
          }
          program { // hide tree and grid
-            signal: "mouse,down,1"; source: "tree_events";
-            filter: "tree_clip" "visible";
+            signal: "mouse,out"; source: "tree_event";
+            filter: "photo_events" "default"; // do not hide if fixed
             action: STATE_SET "default" 0.0;
-            transition: ACCELERATE 0.3;
-            target: "grid_clip";
+            transition: ACCEL 0.3 CURRENT;
             target: "tree_clip";
+            target: "grid_clip";
          }
+
 
          //// Grid  ----------------------------------------------------------
          part { name: "grid_clip"; type: RECT;
@@ -142,15 +175,15 @@ collections {
                fixed: 1 1;
             }
          }
-         program { // show grid
+         program { name: "show_grid";
             signal: "mouse,in"; source: "grid_events";
             action: STATE_SET "visible" 0.0;
             transition: DECEL 0.3 CURRENT;
             target: "grid_clip";
          }
-         program { // hide grid
+         program { name: "hide grid";
             signal: "mouse,out"; source: "grid_events";
-            filter: "tree_clip" "default"; // do not hide if tree is visble
+            filter: "photo_events" "default"; // do not hide if fixed
             action: STATE_SET "default" 0.0;
             transition: ACCEL 0.3 CURRENT;
             target: "grid_clip";
