@@ -48,8 +48,7 @@ from efl.elementary.photocam import Photocam, ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT, \
     ELM_PHOTOCAM_ZOOM_MODE_MANUAL
 from efl.elementary.scroller import Scrollable, ELM_SCROLLER_POLICY_OFF
 from efl.elementary.scroller import Scroller, \
-    ELM_SCROLLER_MOVEMENT_BLOCK_VERTICAL, \
-    ELM_SCROLLER_MOVEMENT_BLOCK_HORIZONTAL
+    ELM_SCROLLER_MOVEMENT_BLOCK_VERTICAL, ELM_SCROLLER_MOVEMENT_BLOCK_HORIZONTAL
 from efl.elementary.separator import Separator
 from efl.elementary.slideshow import Slideshow, SlideshowItemClass
 from efl.elementary.spinner import Spinner
@@ -192,40 +191,26 @@ class PhotoGrid(Gengrid):
 
     def _gg_content_get(self, gg, part, item_data):
         if part == 'elm.swallow.icon':
-            return Thumb(gg, style="noframe", aspect=ETHUMB_THUMB_CROP,
+            return Thumb(gg, style='noframe', aspect=ETHUMB_THUMB_CROP,
                          file=item_data)
 
     def _gg_text_get(self, gg, part, item_data):
         return os.path.basename(item_data)
 
     def _item_selected_cb(self, gg, item):
-        self._select_cb(item.data)
+        self._select_cb(item.data, item.index - 1)
 
-    def populate(self, path):
-        self.clear()
-        for f in natural_sort(os.listdir(path)):
-            if os.path.splitext(f)[-1].lower() in IMG_EXTS:
-                self.item_append(self.itc, os.path.join(path, f))
-        if self.first_item:
-            self.first_item.selected = True
-            self.first_item.show()
-
-    def next_select(self):
-        it = self.selected_item or self.first_item
-        if it: it = it.next
-        if it: it.selected = True
-
-    def prev_select(self):
-        it = self.selected_item or self.last_item
-        if it: it = it.prev
-        if it: it.selected = True
+    def photo_add(self, path):
+        self.item_append(self.itc, path)
 
     def file_select(self, path):
+        if self.selected_item and self.selected_item.data == path:
+            return
         it = self.first_item
         while it:
             if it.data == path:
                 it.selected = True
-                it.show()
+                it.show() # XXX this is quite annoying if you are browsing the grid
                 return
             it = it.next
 
@@ -233,21 +218,21 @@ class PhotoGrid(Gengrid):
 class ScrollablePhoto(Scroller):
     ZOOMS = [5, 7, 10, 15, 20, 30, 50, 75, 100, 150, 200, 300,
              500, 750, 1000, 1500, 2000, 3000, 5000, 7500, 10000]
-    def __init__(self, parent, changed_cb):
-        self._changed_cb = changed_cb
+    def __init__(self, parent, zoom_changed_cb):
+        self._zoom_changed_cb = zoom_changed_cb
         self.image_size = 0, 0 # original image pixel size
         self.fit = True # keep image fitted on resize
 
         Scroller.__init__(self, parent, gravity=(0.5, 0.5),
-            policy=(ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_OFF),
-            movement_block=ELM_SCROLLER_MOVEMENT_BLOCK_VERTICAL |
-                           ELM_SCROLLER_MOVEMENT_BLOCK_HORIZONTAL)
+                    policy=(ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_OFF),
+                    movement_block=ELM_SCROLLER_MOVEMENT_BLOCK_VERTICAL |
+                                   ELM_SCROLLER_MOVEMENT_BLOCK_HORIZONTAL)
         self.on_mouse_wheel_add(self._on_mouse_wheel)
         self.on_mouse_down_add(self._on_mouse_down)
         self.on_mouse_up_add(self._on_mouse_up)
         self.on_resize_add(self._on_resize)
 
-        self.img = Image(self, preload_disabled=True)
+        self.img = Image(self, preload_disabled=False)
         self.img.show()
 
         # table help to keep the image centered in the scroller
@@ -291,7 +276,7 @@ class ScrollablePhoto(Scroller):
         self.img.size_hint_min = w, h
         self.img.size_hint_max = w, h
 
-        self._changed_cb(self.zoom)
+        self._zoom_changed_cb(self.zoom)
 
     # mouse wheel: zoom
     def _on_mouse_wheel(self, obj, event):
@@ -371,7 +356,7 @@ class ScrollablePhotocam(Photocam, Scrollable):
 
     # mouse wheel: zoom
     def _on_mouse_wheel(self, obj, event):
-        event.event_flags |= EVAS_EVENT_FLAG_ON_HOLD
+        # event.event_flags |= EVAS_EVENT_FLAG_ON_HOLD
         new = self.zoom * (1.1 if event.z == 1 else 0.9)
         self.zoom_set(new)
 
@@ -583,6 +568,41 @@ class SlideShow(Slideshow):
             btn.icon = 'media-playback-start'
 
 
+class SlideShow2(Slideshow):
+    def __init__(self, parent, photo_changed_cb, zoom_changed_cb):
+        self._photo_changed_cb = photo_changed_cb
+        self._zoom_changed_cb = zoom_changed_cb
+
+        self.itc = SlideshowItemClass(self._item_get_func)
+        Slideshow.__init__(self, parent)#, #timeout=5.0,
+        self.callback_changed_add(self._changed_cb)
+
+    def photo_add(self, path):
+        item = self.item_add(self.itc, path)
+        # XXX the first added item get the changed_cb called before
+        # python-efl can do the _set_obj, so we get a null item.object in the cb
+        if self.count == 1 and item.object:
+            self._photo_changed_cb(item.data)
+
+    def photo_nth_show(self, pos):
+        self.nth_item_get(pos).show()
+
+    @property
+    def photo(self):
+        return self.current_item.object
+
+    def _item_get_func(self, obj, path):
+        # img = ScrollablePhotocam(self, self._zoom_changed_cb)
+        img = ScrollablePhoto(self, self._zoom_changed_cb)
+        img.file_set(path)
+        img.zoom_set('zoomfit')
+        return img
+
+    def _changed_cb(self, obj, item):
+        if item.object: # XXX see below
+            self._photo_changed_cb(item.data)
+
+
 class ImageEditor(object):
     def __init__(self, app):
         self.bg = Background(app.win, size_hint_expand=EXPAND_BOTH)
@@ -643,7 +663,7 @@ class MainWin(StandardWindow):
         self.layout.show()
 
     def swallow_all(self, app):
-        self.layout.content_set('photo.swallow', app.photo)
+        self.layout.content_set('photo.swallow', app.sshow)
         self.layout.content_set('grid.swallow', app.grid)
         self.layout.content_set('tree.swallow', app.tree)
         self.layout.content_set('status.swallow', app.status)
@@ -678,8 +698,7 @@ class EluminanceApp(object):
     def __init__(self):
 
         self.win = MainWin()
-        # self.photo = ScrollablePhotocam(self.win, self.photo_changed)
-        self.photo = ScrollablePhoto(self.win, self.photo_changed)
+        self.sshow = SlideShow2(self.win, self.photo_changed, self.zoom_changed)
         self.grid = PhotoGrid(self.win, self.grid_selected)
         self.tree = TreeView(self.win, self.tree_selected)
         self.status = StatusBar(self.win)
@@ -696,42 +715,48 @@ class EluminanceApp(object):
                 self.tree.expand_to_folder(path)
                 if os.path.isfile(path):
                     self.grid.file_select(path)
-        else:
-            self.grid.populate(self.current_path)
 
         self.win.show()
 
     def tree_selected(self, path):
         self.current_path = path
-        self.grid.populate(path)
-
-    def grid_selected(self, path):
-        self.current_file = path
-        self.photo.file_set(path)
-        self.photo.zoom_set('zoomfit')
-
-    def photo_changed(self, zoom):
+        self.sshow.clear()
+        self.grid.clear()
+        for f in natural_sort(os.listdir(path)):
+            if os.path.splitext(f)[-1].lower() in IMG_EXTS:
+                full_path = os.path.join(path, f)
+                self.grid.photo_add(full_path)
+                self.sshow.photo_add(full_path)
         self.win.title = 'eluminance - ' + self.current_path
-        self.status.update(self.current_file, self.photo.image_size, zoom)
+
+    def grid_selected(self, path, index):
+        self.sshow.photo_nth_show(index)
+
+    def photo_changed(self, path):
+        self.current_file = path
+        self.grid.file_select(path)
+        self.status.update(self.current_file, self.sshow.photo.image_size, 0)
+
+    def zoom_changed(self, zoom):
+        # TODO update only the zoom
+        self.status.update(self.current_file, self.sshow.photo.image_size, zoom)
 
     def controls_action(self, action):
         if action == 'next':
-            self.grid.next_select()
+            self.sshow.next()
         elif action == 'prev':
-            self.grid.prev_select()
+            self.sshow.previous()
         elif action == 'slideshow':
-            SlideShow(self)
+            SlideShow(self) # TODO inplace slide
         elif action in ('zoomin', 'zoomout', 'zoomfit', 'zoomfill', 'zoomorig'):
-            self.photo.zoom_set(action)
+            self.sshow.photo.zoom_set(action)
 
 
 def main():
-    elementary.init()
     elementary.need_ethumb()
     elementary.theme.theme_extension_add(THEME_FILE)
     EluminanceApp()
     elementary.run()
-    elementary.shutdown()
 
 if __name__ == '__main__':
     sys.exit(main())
