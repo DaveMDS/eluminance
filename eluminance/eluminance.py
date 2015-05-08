@@ -276,7 +276,7 @@ class ScrollablePhoto(Scroller):
         self.img.size_hint_min = w, h
         self.img.size_hint_max = w, h
 
-        self._zoom_changed_cb(self.zoom)
+        self._zoom_changed_cb(z * 100)
 
     # mouse wheel: zoom
     def _on_mouse_wheel(self, obj, event):
