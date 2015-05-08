@@ -23,6 +23,8 @@ from __future__ import absolute_import, print_function, unicode_literals
 import os
 import sys
 import re
+import pickle
+from xdg.BaseDirectory import xdg_config_home
 
 from efl.evas import EXPAND_BOTH, EXPAND_HORIZ, FILL_BOTH, FILL_HORIZ, \
     EVAS_EVENT_FLAG_ON_HOLD
@@ -63,6 +65,7 @@ IMG_EXTS = ('.jpg','.jpeg','.png','.gif','.tiff','.bmp')
 script_path = os.path.dirname(__file__)
 install_prefix = script_path[0:script_path.find('/lib/python')]
 data_path = os.path.join(install_prefix, 'share', 'eluminance')
+config_file = os.path.join(xdg_config_home, 'eluminance', 'config.pickle')
 THEME_FILE = os.path.join(data_path, 'themes', 'default.edj')
 
 def _(string):
@@ -96,6 +99,33 @@ def natural_sort(l):
    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)] 
    return sorted(l, key=alphanum_key)
 
+class Options(object):
+    """ Class for persistent application settings """
+    def __init__(self):
+        self.sshow_timeout = 5.0
+        self.sshow_transition = 'horizontal'
+
+    def load(self):
+        try:
+            # load only attributes (not methods) from the instance saved to disk
+            saved = pickle.load(open(config_file, 'rb'))
+            for attr in dir(self):
+                if attr[0] != '_' and not callable(getattr(self, attr)):
+                    if hasattr(saved, attr):
+                        setattr(self, attr, getattr(saved, attr))
+        except:
+            pass
+
+    def save(self):
+        # create config folder if needed
+        config_path = os.path.dirname(config_file)
+        if not os.path.exists(config_path):
+            os.makedirs(config_path)
+        # save this whole class instance to file
+        with open(config_file, 'wb') as f:
+            pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
+
+options = Options()
 
 class StdButton(Button):
     """ A Button with a standard fdo icon """
@@ -493,10 +523,10 @@ class SlideShow(Slideshow):
     def __init__(self, parent, photo_changed_cb, zoom_changed_cb):
         self._photo_changed_cb = photo_changed_cb
         self._zoom_changed_cb = zoom_changed_cb
-        self._timeout = 5
 
         self.itc = SlideshowItemClass(self._item_get_func)
-        Slideshow.__init__(self, parent, style='eluminance')
+        Slideshow.__init__(self, parent, style='eluminance',
+                           transition=options.sshow_transition)
         self.callback_changed_add(self._changed_cb)
 
         # Normal buttons
@@ -529,14 +559,14 @@ class SlideShow(Slideshow):
 
         # Timeout spinner
         self.spinner = Spinner(self, label_format="%2.0f secs.", step=1,
-                               min_max=(3, 60), value=self._timeout)
+                               min_max=(3, 60), value=options.sshow_timeout)
         self.spinner.callback_changed_add(self._spinner_cb)
         self.spinner.tooltip_text_set(_('Transition time'))
         parent.layout.box_append('controls.box', self.spinner)
         self.spinner.show()
 
         # Transition selector
-        hv = Hoversel(self, hover_parent=parent, text=self.transitions[0])
+        hv = Hoversel(self, hover_parent=parent, text=options.sshow_transition)
         hv.tooltip_text_set(_('Transition style'))
         for t in list(self.transitions) + [None]:
             hv.item_add(t or "None", None, 0, self._transition_cb, t)
@@ -556,7 +586,7 @@ class SlideShow(Slideshow):
         self.nth_item_get(index).show()
 
     def play(self):
-        self.timeout = self._timeout
+        self.timeout = options.sshow_timeout
         self.toggle_btn.text = _('Pause')
         self.toggle_btn.icon = 'media-playback-pause'
         self.signal_emit('eluminance,play', 'eluminance')
@@ -602,12 +632,12 @@ class SlideShow(Slideshow):
             self.photo.zoom_set(action)
 
     def _spinner_cb(self, spinner):
-        self._timeout = spinner.value
+        options.sshow_timeout = spinner.value
         if self.timeout != 0:
-            self.timeout = self._timeout
+            self.timeout = options.sshow_timeout
 
     def _transition_cb(self, hoversel, item, transition):
-        self.transition = transition
+        self.transition = options.sshow_transition = transition
         self.hs_transition.text = transition or "None"
 
 
@@ -727,10 +757,12 @@ class EluminanceApp(object):
 
 
 def main():
+    options.load()
     elementary.need_ethumb()
     elementary.theme.theme_extension_add(THEME_FILE)
     EluminanceApp()
     elementary.run()
+    options.save()
 
 if __name__ == '__main__':
     sys.exit(main())
