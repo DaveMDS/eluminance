@@ -478,9 +478,10 @@ class StatusBar(Box):
         # self.pack_end(bt)
         # self.btn_edit = bt
 
-    def update(self, img_path, img_size, zoom):
-        self.lb_name.text = '<align=left><b>{0}:</b> {1}</align>'.format(
-                                _('File'), os.path.basename(img_path))
+    def update(self, img_path, img_num, tot_imgs, img_size, zoom):
+        self.lb_name.text = '<align=left><b>{} {} of {}:</b> {}</align>'.format(
+                                _('File'), img_num, tot_imgs,
+                                os.path.basename(img_path))
         self.lb_info.text = \
             '<b>{}:</b> {}x{}    <b>{}:</b> {}    <b>{}:</b> {:.0f}%'.format(
                 _('Resolution'), img_size[0], img_size[1],
@@ -530,11 +531,13 @@ class SlideShow(Slideshow):
         self.spinner = Spinner(self, label_format="%2.0f secs.", step=1,
                                min_max=(3, 60), value=self._timeout)
         self.spinner.callback_changed_add(lambda s: setattr(self, '_timeout', s.value))
+        self.spinner.tooltip_text_set(_('Transition time'))
         parent.layout.box_append('controls.box', self.spinner)
         self.spinner.show()
 
-        # Transitions elector
+        # Transition selector
         hv = Hoversel(self, hover_parent=parent, text=self.transitions[0])
+        hv.tooltip_text_set(_('Transition style'))
         for t in list(self.transitions) + [None]:
             hv.item_add(t or "None", None, 0, self._transition_cb, t)
         parent.layout.box_append('controls.box', hv)
@@ -542,14 +545,15 @@ class SlideShow(Slideshow):
         hv.show()
 
     def photo_add(self, path):
-        item = self.item_add(self.itc, path)
+        item_data = (path, self.count + 1)
+        item = self.item_add(self.itc, item_data)
         # XXX the first added item get the changed_cb called before
         # python-efl can do the _set_obj, so we get a null item.object in the cb
         if self.count == 1 and item.object:
-            self._photo_changed_cb(item.data)
+            self._photo_changed_cb(path)
 
-    def photo_nth_show(self, pos):
-        self.nth_item_get(pos).show()
+    def photo_nth_show(self, index):
+        self.nth_item_get(index).show()
 
     def play(self):
         self.timeout = self._timeout
@@ -565,7 +569,13 @@ class SlideShow(Slideshow):
     def photo(self):
         return self.current_item.object
 
-    def _item_get_func(self, obj, path):
+    @property
+    def index(self):
+        path, index = self.current_item.data
+        return index
+
+    def _item_get_func(self, obj, item_data):
+        path, index = item_data
         # img = ScrollablePhotocam(self, self._zoom_changed_cb)
         img = ScrollablePhoto(self, self._zoom_changed_cb)
         img.file_set(path)
@@ -574,7 +584,8 @@ class SlideShow(Slideshow):
 
     def _changed_cb(self, obj, item):
         if item.object: # XXX see below note in photo_add()
-            self._photo_changed_cb(item.data)
+            path, index = item.data
+            self._photo_changed_cb(path)
 
     def _buttons_cb(self, bt, action):
         if action == 'next':
@@ -697,11 +708,13 @@ class EluminanceApp(object):
     def photo_changed(self, path):
         self.current_file = path
         self.grid.file_select(path)
-        self.status.update(self.current_file, self.sshow.photo.image_size, 0)
+        self.status.update(self.current_file, self.sshow.index, self.sshow.count,
+                           self.sshow.photo.image_size, 0)
 
     def zoom_changed(self, zoom):
         # TODO update only the zoom
-        self.status.update(self.current_file, self.sshow.photo.image_size, zoom)
+        self.status.update(self.current_file, self.sshow.index, self.sshow.count,
+                           self.sshow.photo.image_size, zoom)
 
 
 def main():
