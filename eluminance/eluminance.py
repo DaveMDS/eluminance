@@ -530,7 +530,7 @@ class SlideShow(Slideshow):
         # Timeout spinner
         self.spinner = Spinner(self, label_format="%2.0f secs.", step=1,
                                min_max=(3, 60), value=self._timeout)
-        self.spinner.callback_changed_add(lambda s: setattr(self, '_timeout', s.value))
+        self.spinner.callback_changed_add(self._spinner_cb)
         self.spinner.tooltip_text_set(_('Transition time'))
         parent.layout.box_append('controls.box', self.spinner)
         self.spinner.show()
@@ -600,6 +600,11 @@ class SlideShow(Slideshow):
             self.play() if self.timeout == 0 else self.pause()
         elif action in ('zoomin', 'zoomout', 'zoomfit', 'zoomfill', 'zoomorig'):
             self.photo.zoom_set(action)
+
+    def _spinner_cb(self, spinner):
+        self._timeout = spinner.value
+        if self.timeout != 0:
+            self.timeout = self._timeout
 
     def _transition_cb(self, hoversel, item, transition):
         self.transition = transition
