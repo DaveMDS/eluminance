@@ -330,6 +330,16 @@ collections {
       }
    }
 
+   /// TRANSPARENT SCROLLER (used in the ScrollablePhoto class) ///////////////
+   group { name: "elm/scroller/base/trans";
+      parts {
+         part { name: "elm.swallow.content";
+            type: SWALLOW;
+            description { state: "default" 0.0;
+            }
+         }
+      }
+   }
 
    /// ELM SLIDESHOW //////////////////////////////////////////////////////////
    #include "elm_slideshow.edc"

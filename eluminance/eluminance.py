@@ -223,7 +223,7 @@ class ScrollablePhoto(Scroller):
         self.image_size = 0, 0 # original image pixel size
         self.fit = True # keep image fitted on resize
 
-        Scroller.__init__(self, parent, gravity=(0.5, 0.5),
+        Scroller.__init__(self, parent, gravity=(0.5, 0.5), style="trans",
                     policy=(ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_OFF),
                     movement_block=ELM_SCROLLER_MOVEMENT_BLOCK_VERTICAL |
                                    ELM_SCROLLER_MOVEMENT_BLOCK_HORIZONTAL)
