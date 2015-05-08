@@ -16,11 +16,6 @@ setup(
     requires = ['efl (>=1.14)'],
     provides = ['eluminance'],
     scripts = ['bin/eluminance'],
-    # data_files = [
-        # ('share/applications', ['data/egitu.desktop']),
-        # ('share/icons', ['data/icons/256x256/egitu.png']),
-        # ('share/icons/hicolor/256x256/apps', ['data/icons/256x256/egitu.png']),
-    # ],
     cmdclass={
         'build': build_extra,
         'build_edc': build_edc,

@@ -489,86 +489,6 @@ class StatusBar(Box):
 
 
 class SlideShow(Slideshow):
-    NOTIFY_TIMEOUT = 3.0
-    def __init__(self, app):
-        Slideshow.__init__(self, app.win, timeout=5.0,
-                           size_hint_expand=EXPAND_BOTH)
-        app.win.resize_object_add(self)
-        self.show()
-
-        itc = SlideshowItemClass(self._item_get_func)
-        grid_item = app.grid.first_item
-        while grid_item:
-            self.item_add(itc, grid_item.data)
-            grid_item = grid_item.next
-
-        box = Box(self, horizontal=True)
-
-        notify = Notify(self, align=(0.5, 1.0), content=box,
-                        timeout=self.NOTIFY_TIMEOUT,
-                        size_hint_expand=EXPAND_BOTH)
-        notify.on_mouse_in_add(self._notify_mouse_in_cb)
-        notify.on_mouse_out_add(self._notify_mouse_out_cb)
-        self.on_mouse_move_add(self._sshow_mouse_move_cb, notify)
-
-        bt = StdButton(box, icon='go-previous')
-        bt.callback_clicked_add(lambda b: self.previous())
-        box.pack_end(bt)
-
-        bt = StdButton(box, icon='go-next')
-        bt.callback_clicked_add(lambda b: self.next())
-        box.pack_end(bt)
-
-        hv = Hoversel(box, hover_parent=app.win, text=self.transitions[0])
-        for t in list(self.transitions) + [None]:
-            hv.item_add(t or "None", None, 0, self._transition_cb, t)
-        box.pack_end(hv)
-        hv.show()
-
-        spinner = Spinner(box, label_format="%2.0f secs.", step=1,
-                          min_max=(3, 60), value=3)
-        spinner.callback_changed_add(lambda s: setattr(self, 'timeout', s.value))
-        box.pack_end(spinner)
-        spinner.show()
-
-        bt = StdButton(box, icon='media-playback-pause', text='Pause')
-        bt.callback_clicked_add(self._play_pause_cb)
-        box.pack_end(bt)
-
-        bt = StdButton(box, icon='close', text='Close')
-        bt.callback_clicked_add(lambda b: self.delete())
-        box.pack_end(bt)
-
-    def _item_get_func(self, obj, file_path):
-        return Image(obj, file=file_path)
-
-    def _sshow_mouse_move_cb(self, obj, event, notify):
-        notify.timeout = self.NOTIFY_TIMEOUT
-        notify.show()
-
-    def _notify_mouse_in_cb(self, notify, event):
-        notify.timeout = 0.0
-        notify.show()
-
-    def _notify_mouse_out_cb(self, notify, event):
-        notify.timeout = self.NOTIFY_TIMEOUT
-
-    def _transition_cb(self, hoversel, item, transition):
-        self.transition = transition
-        hoversel.text = transition or "None"
-
-    def _play_pause_cb(self, btn):
-        if self.timeout == 0:
-            self.timeout = 3 # TODO FIXME
-            btn.text = 'Pause'
-            btn.icon = 'media-playback-pause'
-        else:
-            self.timeout = 0
-            btn.text = 'Play'
-            btn.icon = 'media-playback-start'
-
-
-class SlideShow2(Slideshow):
     def __init__(self, parent, photo_changed_cb, zoom_changed_cb):
         self._photo_changed_cb = photo_changed_cb
         self._zoom_changed_cb = zoom_changed_cb
@@ -741,7 +661,7 @@ class EluminanceApp(object):
     def __init__(self):
 
         self.win = MainWin()
-        self.sshow = SlideShow2(self.win, self.photo_changed, self.zoom_changed)
+        self.sshow = SlideShow(self.win, self.photo_changed, self.zoom_changed)
         self.grid = PhotoGrid(self.win, self.grid_selected)
         self.tree = TreeView(self.win, self.tree_selected)
         self.status = StatusBar(self.win)
