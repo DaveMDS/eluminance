@@ -242,6 +242,10 @@ collections {
             transition: DECEL 0.2;
             target: "controls.box";
             target: "controls_clip";
+            after: "show status in play mode";
+         }
+         program { name: "show status in play mode";
+            action: SIGNAL_EMIT "status,show" "";
          }
          program { name: "hide_controls";
             signal: "mouse,out"; source: "controls_event";
@@ -249,7 +253,11 @@ collections {
             transition: ACCEL 0.2;
             target: "controls.box";
             target: "controls_clip";
+            after: "hide status in play mode";
             in: 2.0 0;
+         }
+         program { name: "hide status in play mode";
+            action: SIGNAL_EMIT "status,hide" "";
          }
          program { name: "stop_hiding";
             signal: "mouse,in"; source: "controls_event";
@@ -259,10 +267,19 @@ collections {
 
          //// Statusbar  -----------------------------------------------------
          part { name: "status"; type: IMAGE;
-            description { state: "default" 0.0;
+            description { state: "default" 0.0; // always visible (pause mode)
                rel1.relative: 0.0 1.0;
                rel1.offset: 0 -24;
                image.normal: "status_bg.png";
+               fixed: 1 1;
+            }
+            description { state: "hidden" 0.0; // hidden in play mode
+               inherit: "default" 0.0;
+               rel1.offset: 0 0;
+               rel2.offset: 0 24;
+            }
+            description { state: "visible" 0.0; // visible in play mode
+               inherit: "default" 0.0;
             }
             part { name: "status.swallow"; type: SWALLOW;
                description { state: "default" 0.0;
@@ -288,6 +305,28 @@ collections {
             }
          }
 
+         program { signal: "eluminance,play"; source: "eluminance";
+            action: STATE_SET "hidden" 0.0;
+            transition: ACCEL 0.3;
+            target: "status";
+         }
+         program { signal: "eluminance,pause"; source: "eluminance";
+            action: STATE_SET "default" 0.0;
+            transition: DECEL 0.3;
+            target: "status";
+         }
+         program { signal: "status,show"; source: "";
+            filter: "status" "hidden";
+            action: STATE_SET "visible" 0.0;
+            transition: DECEL 0.3;
+            target: "status";
+         }
+         program { signal: "status,hide"; source: "";
+            filter: "status" "visible";
+            action: STATE_SET "hidden" 0.0;
+            transition: ACCEL 0.3;
+            target: "status";
+         }
       }
    }
 

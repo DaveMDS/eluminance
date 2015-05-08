@@ -493,7 +493,7 @@ class SlideShow(Slideshow):
     def __init__(self, parent, photo_changed_cb, zoom_changed_cb):
         self._photo_changed_cb = photo_changed_cb
         self._zoom_changed_cb = zoom_changed_cb
-        self._timeout = 3
+        self._timeout = 5
 
         self.itc = SlideshowItemClass(self._item_get_func)
         Slideshow.__init__(self, parent, style='eluminance')
@@ -559,11 +559,15 @@ class SlideShow(Slideshow):
         self.timeout = self._timeout
         self.toggle_btn.text = _('Pause')
         self.toggle_btn.icon = 'media-playback-pause'
+        self.signal_emit('eluminance,play', 'eluminance')
+        self.parent.layout.signal_emit('eluminance,play', 'eluminance')
 
     def pause(self):
         self.timeout = 0.0
         self.toggle_btn.text = _('Play')
         self.toggle_btn.icon = 'media-playback-start'
+        self.signal_emit('eluminance,pause', 'eluminance')
+        self.parent.layout.signal_emit('eluminance,pause', 'eluminance')
 
     @property
     def photo(self):

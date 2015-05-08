@@ -4,11 +4,14 @@ group { name: "elm/slideshow/base/eluminance";
       item: layouts "fullscreen not_fullscreen";
    }
    parts {
-      // part { name: "whole"; type: RECT;
-         // description { state: "default" 0.0;
-            // color: 0 0 0 255;
-         // }
-      // }
+      part { name: "whole"; type: RECT;
+         description { state: "default" 0.0;
+            color: 0 0 0 0;
+         }
+         description { state: "play" 0.0;
+            color: 0 0 0 255;
+         }
+      }
       part { name: "image_1_whole"; type: RECT;
          description { state: "default" 0.0;
          }
@@ -342,6 +345,16 @@ group { name: "elm/slideshow/base/eluminance";
          action: STATE_SET "default" 0.0;
          target: "image_1_whole";
          target: "image_2_whole";
+      }
+      program {  signal: "eluminance,play"; source: "eluminance";
+          action: STATE_SET "play" 0.0;
+          transition: LINEAR 1.0;
+          target: "whole";
+      }
+      program {  signal: "eluminance,pause"; source: "eluminance";
+          action: STATE_SET "default" 0.0;
+          transition: LINEAR 1.0;
+          target: "whole";
       }
    }
 }
