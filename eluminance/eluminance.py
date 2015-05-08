@@ -572,10 +572,54 @@ class SlideShow2(Slideshow):
     def __init__(self, parent, photo_changed_cb, zoom_changed_cb):
         self._photo_changed_cb = photo_changed_cb
         self._zoom_changed_cb = zoom_changed_cb
+        self._timeout = 3
 
         self.itc = SlideshowItemClass(self._item_get_func)
-        Slideshow.__init__(self, parent)#, #timeout=5.0,
+        Slideshow.__init__(self, parent, style='eluminance')
         self.callback_changed_add(self._changed_cb)
+
+        # Normal buttons
+        buttons = [ # (label, tooltip, icon, action)
+            (None, _('Zoom in'), 'zoom-in', 'zoomin'),
+            (None, _('Zoom out'), 'zoom-out', 'zoomout'),
+            (None, _('Zoom 1:1'), 'zoom-original', 'zoomorig'),
+            (None, _('Zoom fit'), 'zoom-fit-best', 'zoomfit'),
+            # (_('Zoom fill'), 'zoom-fit-best', 'zoomfill'),
+            ('sep', None, None, None),
+            (None, _('Previous photo'), 'go-previous', 'prev'),
+            (None, _('Next photo'), 'go-next', 'next'),
+        ]
+
+        for label, tooltip, icon, action in buttons:
+            if label == 'sep':
+                parent.layout.box_append('controls.box', Separator(self))
+            else:
+                bt = StdButton(self, icon=icon, text=label)
+                bt.callback_clicked_add(self._buttons_cb, action)
+                bt.tooltip_text_set(tooltip)
+                parent.layout.box_append('controls.box', bt)
+
+        # Play/Pause button
+        bt = StdButton(self, icon='media-playback-start', text=_('Play'))
+        bt.callback_clicked_add(self._buttons_cb, 'slideshow')
+        bt.tooltip_text_set(_('Start/Stop slideshow'))
+        parent.layout.box_append('controls.box', bt)
+        self.toggle_btn = bt
+
+        # Timeout spinner
+        self.spinner = Spinner(self, label_format="%2.0f secs.", step=1,
+                               min_max=(3, 60), value=self._timeout)
+        self.spinner.callback_changed_add(lambda s: setattr(self, '_timeout', s.value))
+        parent.layout.box_append('controls.box', self.spinner)
+        self.spinner.show()
+
+        # Transitions elector
+        hv = Hoversel(self, hover_parent=parent, text=self.transitions[0])
+        for t in list(self.transitions) + [None]:
+            hv.item_add(t or "None", None, 0, self._transition_cb, t)
+        parent.layout.box_append('controls.box', hv)
+        self.hs_transition = hv
+        hv.show()
 
     def photo_add(self, path):
         item = self.item_add(self.itc, path)
@@ -586,6 +630,16 @@ class SlideShow2(Slideshow):
 
     def photo_nth_show(self, pos):
         self.nth_item_get(pos).show()
+
+    def play(self):
+        self.timeout = self._timeout
+        self.toggle_btn.text = _('Pause')
+        self.toggle_btn.icon = 'media-playback-pause'
+
+    def pause(self):
+        self.timeout = 0.0
+        self.toggle_btn.text = _('Play')
+        self.toggle_btn.icon = 'media-playback-start'
 
     @property
     def photo(self):
@@ -599,8 +653,22 @@ class SlideShow2(Slideshow):
         return img
 
     def _changed_cb(self, obj, item):
-        if item.object: # XXX see below
+        if item.object: # XXX see below note in photo_add()
             self._photo_changed_cb(item.data)
+
+    def _buttons_cb(self, bt, action):
+        if action == 'next':
+            self.next()
+        elif action == 'prev':
+            self.previous()
+        elif action == 'slideshow':
+            self.play() if self.timeout == 0 else self.pause()
+        elif action in ('zoomin', 'zoomout', 'zoomfit', 'zoomfill', 'zoomorig'):
+            self.photo.zoom_set(action)
+
+    def _transition_cb(self, hoversel, item, transition):
+        self.transition = transition
+        self.hs_transition.text = transition or "None"
 
 
 class ImageEditor(object):
@@ -668,31 +736,6 @@ class MainWin(StandardWindow):
         self.layout.content_set('tree.swallow', app.tree)
         self.layout.content_set('status.swallow', app.status)
 
-    def populate_controls(self, action_cb):
-        buttons = [ # (label, icon, action)
-            (_('Zoom in'), 'zoom-in', 'zoomin'),
-            (_('Zoom out'), 'zoom-out', 'zoomout'),
-            (_('Zoom 1:1'), 'zoom-original', 'zoomorig'),
-            (_('Zoom fit'), 'zoom-fit-best', 'zoomfit'),
-            # (_('Zoom fill'), 'zoom-fit-best', 'zoomfill'),
-            ('sep', None, None),
-            (_('Previous photo'), 'go-previous', 'prev'),
-            (_('Next photo'), 'go-next', 'next'),
-            (_('Slideshow'), 'media-playback-start', 'slideshow'),
-        ]
-
-        for label, icon, action in buttons:
-            if label == 'sep':
-                self.layout.box_append('controls.box', Separator(self))
-            else:
-                bt = StdButton(self, icon=icon)
-                bt.callback_clicked_add(self._buttons_cb, action_cb, action)
-                bt.tooltip_text_set(label)
-                self.layout.box_append('controls.box', bt)
-
-    def _buttons_cb(self, bt, func, action):
-        func(action)
-
 
 class EluminanceApp(object):
     def __init__(self):
@@ -703,7 +746,6 @@ class EluminanceApp(object):
         self.tree = TreeView(self.win, self.tree_selected)
         self.status = StatusBar(self.win)
         self.win.swallow_all(self)
-        self.win.populate_controls(self.controls_action)
 
         self.current_path = os.path.expanduser('~')
         self.current_file = None
@@ -740,16 +782,6 @@ class EluminanceApp(object):
     def zoom_changed(self, zoom):
         # TODO update only the zoom
         self.status.update(self.current_file, self.sshow.photo.image_size, zoom)
-
-    def controls_action(self, action):
-        if action == 'next':
-            self.sshow.next()
-        elif action == 'prev':
-            self.sshow.previous()
-        elif action == 'slideshow':
-            SlideShow(self) # TODO inplace slide
-        elif action in ('zoomin', 'zoomout', 'zoomfit', 'zoomfill', 'zoomorig'):
-            self.sshow.photo.zoom_set(action)
 
 
 def main():

@@ -18,6 +18,7 @@ images {
    image: "bg_bevel.png" COMP;
    image: "glint.png" COMP;
    image: "status_bg.png" COMP;
+   image: "controls_bg.png" COMP;
 }
 
 collections {
@@ -198,14 +199,17 @@ collections {
                color: 255 255 255 255;
             }
          }
-         part { name: "controls_bg"; type: RECT;
+         part { name: "controls_bg"; type: IMAGE;
             clip_to: "controls_clip";
             description { state: "default" 0.0;
                rel1.to: "controls.box";
                rel2.to: "controls.box";
-               rel1.offset: -6 0;
-               rel2.offset: 5 5;
-               color: 100 100 100 100;
+               rel1.offset: -13 -10;
+               rel2.offset: 11 9;
+               image {
+                  normal: "controls_bg.png";
+                  border: 15 15 15 15;
+               }
             }
          }
          part { name: "controls.box"; type: BOX;
@@ -220,6 +224,7 @@ collections {
             description { state: "visible" 0.0;
                inherit: "default" 0.0;
                align: 0.5 0.0;
+               rel1.offset: 0 10;
             }
          }
          part { name: "controls_event"; type: RECT;
@@ -244,7 +249,7 @@ collections {
             transition: ACCEL 0.2;
             target: "controls.box";
             target: "controls_clip";
-            in: 1.0 0;
+            in: 2.0 0;
          }
          program { name: "stop_hiding";
             signal: "mouse,in"; source: "controls_event";
@@ -286,6 +291,9 @@ collections {
       }
    }
 
+
+   /// ELM SLIDESHOW //////////////////////////////////////////////////////////
+   #include "elm_slideshow.edc"
 
    /// CROPPER ////////////////////////////////////////////////////////////////
    #include "cropper.edc"
