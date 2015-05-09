@@ -58,6 +58,7 @@ from efl.elementary.table import Table
 from efl.elementary.thumb import Thumb, ETHUMB_THUMB_CROP
 from efl.elementary.toolbar import Toolbar
 from efl.elementary.window import StandardWindow
+from efl.elementary.theme import theme_extension_add
 
 
 IMG_EXTS = ('.jpg','.jpeg','.png','.gif','.tiff','.bmp')
@@ -520,6 +521,8 @@ class StatusBar(Box):
 
 
 class SlideShow(Slideshow):
+    TRANSITIONS = ('fade', 'black_fade', 'horizontal', 'vertical', 'square',
+                   'immediate')
     def __init__(self, parent, photo_changed_cb, zoom_changed_cb):
         self._photo_changed_cb = photo_changed_cb
         self._zoom_changed_cb = zoom_changed_cb
@@ -566,10 +569,11 @@ class SlideShow(Slideshow):
         self.spinner.show()
 
         # Transition selector
-        hv = Hoversel(self, hover_parent=parent, text=options.sshow_transition)
+        hv = Hoversel(self, hover_parent=parent,
+                      text=_(options.sshow_transition))
         hv.tooltip_text_set(_('Transition style'))
-        for t in list(self.transitions) + [None]:
-            hv.item_add(t or "None", None, 0, self._transition_cb, t)
+        for t in self.TRANSITIONS:
+            hv.item_add(t, None, 0, self._transition_cb, t)
         parent.layout.box_append('controls.box', hv)
         self.hs_transition = hv
         hv.show()
@@ -638,7 +642,7 @@ class SlideShow(Slideshow):
 
     def _transition_cb(self, hoversel, item, transition):
         self.transition = options.sshow_transition = transition
-        self.hs_transition.text = transition or "None"
+        self.hs_transition.text = _(transition)
 
 
 class ImageEditor(object):
@@ -759,7 +763,7 @@ class EluminanceApp(object):
 def main():
     options.load()
     elementary.need_ethumb()
-    elementary.theme.theme_extension_add(THEME_FILE)
+    theme_extension_add(THEME_FILE)
     EluminanceApp()
     elementary.run()
     options.save()
