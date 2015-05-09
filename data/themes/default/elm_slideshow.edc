@@ -1,6 +1,6 @@
 group { name: "elm/slideshow/base/eluminance";
    data {
-      item: transitions "fade black_fade horizontal vertical square immediate";
+      item: transitions "fade fade_fast black_fade horizontal vertical square immediate";
       item: layouts "fullscreen not_fullscreen";
    }
    parts {
@@ -204,6 +204,33 @@ group { name: "elm/slideshow/base/eluminance";
          target: "image_1_whole";
          target: "image_2_whole";
          transition: SINUSOIDAL 1.5;
+         after: "end";
+      }
+      // Transition: fade_fast
+      program { signal: "elm,fade_fast,next"; source: "elm";
+         action: STATE_SET "default" 0.0;
+         target: "image_1_whole";
+         target: "image_2_whole";
+         after: "fade_fast_next_2";
+      }
+      program { name: "fade_fast_next_2";
+         action: STATE_SET "fade_prev_next" 0.0;
+         target: "image_1_whole";
+         target: "image_2_whole";
+         transition: SINUSOIDAL 0.5;
+         after: "end";
+      }
+      program { signal: "elm,fade_fast,previous"; source: "elm";
+         action: STATE_SET "default" 0.0;
+         target: "image_1_whole";
+         target: "image_2_whole";
+         after: "fade_fast_previous_2";
+      }
+      program { name: "fade_fast_previous_2";
+         action: STATE_SET "fade_prev_next" 0.0;
+         target: "image_1_whole";
+         target: "image_2_whole";
+         transition: SINUSOIDAL 0.5;
          after: "end";
       }
       // Transition: black_fade

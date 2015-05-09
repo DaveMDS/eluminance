@@ -521,8 +521,8 @@ class StatusBar(Box):
 
 
 class SlideShow(Slideshow):
-    TRANSITIONS = ('fade', 'black_fade', 'horizontal', 'vertical', 'square',
-                   'immediate')
+    TRANSITIONS = ('fade', 'fade_fast', 'black_fade', 'horizontal', 'vertical',
+                   'square', 'immediate')
     def __init__(self, parent, photo_changed_cb, zoom_changed_cb):
         self._photo_changed_cb = photo_changed_cb
         self._zoom_changed_cb = zoom_changed_cb
