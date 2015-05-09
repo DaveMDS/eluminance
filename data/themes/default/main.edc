@@ -379,6 +379,7 @@ collections {
    IC("object-flip-vertical", "icon_object_flip_horizontal.png")
    IC("object-flip-horizontal", "icon_object_flip_vertical.png")
    IC("preferences-system", "icon_preferences_system.png")
+   IC("view-fullscreen", "icon_view_fullscreen.png")
 #undef IC
 
 }

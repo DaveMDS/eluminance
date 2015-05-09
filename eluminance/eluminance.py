@@ -542,41 +542,44 @@ class SlideShow(Slideshow):
             ('sep', None, None, None),
             (None, _('Previous photo'), 'go-previous', 'prev'),
             (None, _('Next photo'), 'go-next', 'next'),
+            ('toggle', _('Start/Stop slideshow'), None, None),
+            ('spinner', _('Transition time'), None, None),
+            ('hover', _('Transition style'), None, None),
+            ('sep', None, None, None),
+            (None, _('Toggle fullscreen mode'), 'view-fullscreen', 'fs'),
         ]
 
         for label, tooltip, icon, action in buttons:
             if label == 'sep':
-                parent.layout.box_append('controls.box', Separator(self))
-            else:
-                bt = StdButton(self, icon=icon, text=label)
-                bt.callback_clicked_add(self._buttons_cb, action)
-                bt.tooltip_text_set(tooltip)
-                parent.layout.box_append('controls.box', bt)
+                w = Separator(self)
+            # Play/Pause toggle button
+            elif label == 'toggle':
+                w = StdButton(self, icon='media-playback-start', text=_('Play'))
+                w.callback_clicked_add(self._buttons_cb, 'slideshow')
+                self.toggle_btn = w
+            # timeout spinner
+            elif label == 'spinner': 
+                w = Spinner(self, label_format="%2.0f secs.",
+                                       step=1, min_max=(3, 60),
+                                       value=options.sshow_timeout)
+                w.callback_changed_add(self._spinner_cb)
+                self.spinner = w
+            # Transition selector
+            elif label == 'hover':
+                w = Hoversel(self, hover_parent=parent,
+                             text=_(options.sshow_transition))
+                for t in self.TRANSITIONS:
+                    w.item_add(t, None, 0, self._transition_cb, t)
+                self.hs_transition = w
+            # normal buttons
+            else: 
+                w = StdButton(self, icon=icon, text=label)
+                w.callback_clicked_add(self._buttons_cb, action)
 
-        # Play/Pause button
-        bt = StdButton(self, icon='media-playback-start', text=_('Play'))
-        bt.callback_clicked_add(self._buttons_cb, 'slideshow')
-        bt.tooltip_text_set(_('Start/Stop slideshow'))
-        parent.layout.box_append('controls.box', bt)
-        self.toggle_btn = bt
+            parent.layout.box_append('controls.box', w)
+            w.tooltip_text_set(tooltip)
+            w.show()
 
-        # Timeout spinner
-        self.spinner = Spinner(self, label_format="%2.0f secs.", step=1,
-                               min_max=(3, 60), value=options.sshow_timeout)
-        self.spinner.callback_changed_add(self._spinner_cb)
-        self.spinner.tooltip_text_set(_('Transition time'))
-        parent.layout.box_append('controls.box', self.spinner)
-        self.spinner.show()
-
-        # Transition selector
-        hv = Hoversel(self, hover_parent=parent,
-                      text=_(options.sshow_transition))
-        hv.tooltip_text_set(_('Transition style'))
-        for t in self.TRANSITIONS:
-            hv.item_add(t, None, 0, self._transition_cb, t)
-        parent.layout.box_append('controls.box', hv)
-        self.hs_transition = hv
-        hv.show()
 
     def photo_add(self, path):
         item_data = (path, self.count + 1)
@@ -632,6 +635,8 @@ class SlideShow(Slideshow):
             self.previous()
         elif action == 'slideshow':
             self.play() if self.timeout == 0 else self.pause()
+        elif action == 'fs':
+            self.parent.fullscreen = not self.parent.fullscreen
         elif action in ('zoomin', 'zoomout', 'zoomfit', 'zoomfill', 'zoomorig'):
             self.photo.zoom_set(action)
 
