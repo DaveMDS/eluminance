@@ -2,7 +2,7 @@
 
 from distutils.core import setup
 from distutils.version import StrictVersion
-from efl.utils.setup import build_extra, build_edc, build_fdo, uninstall
+from efl.utils.setup import build_extra, build_edc, build_fdo, build_i18n, uninstall
 from efl import __version__ as efl_version
 
 MIN_EFL = '1.14'
@@ -27,6 +27,7 @@ setup(
         'build': build_extra,
         'build_edc': build_edc,
         'build_fdo': build_fdo,
+        'build_i18n': build_i18n,
         'uninstall': uninstall,
     },
     command_options={

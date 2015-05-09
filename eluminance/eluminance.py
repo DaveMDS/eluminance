@@ -23,6 +23,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 import os
 import sys
 import pickle
+import gettext
 from xdg.BaseDirectory import xdg_config_home
 
 from efl.evas import EXPAND_BOTH, EXPAND_HORIZ, EXPAND_VERT, \
@@ -73,9 +74,9 @@ data_path = os.path.join(install_prefix, 'share', 'eluminance')
 config_file = os.path.join(xdg_config_home, 'eluminance', 'config.pickle')
 THEME_FILE = os.path.join(data_path, 'themes', 'default.edj')
 
-
-def _(string):
-    return string
+# install the _() and ngettext() functions in the main namespace
+locale_dir = os.path.join(install_prefix, 'share', 'locale')
+gettext.install('eluminance', names='ngettext', localedir=locale_dir)
 
 
 class Options(object):
@@ -489,8 +490,8 @@ class StatusBar(Box):
         # self.btn_edit = bt
 
     def update(self, img_path, img_num, tot_imgs, img_size, zoom):
-        self.lb_name.text = '<align=left><b>{} {} of {}:</b> {}</align>'.format(
-                                _('File'), img_num, tot_imgs,
+        self.lb_name.text = '<align=left><b>{}:</b> {}</align>'.format(
+                                _('File {0} of {1}').format(img_num, tot_imgs),
                                 os.path.basename(img_path))
         self.lb_info.text = \
             '<b>{}:</b> {}x{}    <b>{}:</b> {}    <b>{}:</b> {:.0f}%'.format(
