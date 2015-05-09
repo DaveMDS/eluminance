@@ -22,18 +22,19 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import os
 import sys
-import re
 import pickle
 from xdg.BaseDirectory import xdg_config_home
 
-from efl.evas import EXPAND_BOTH, EXPAND_HORIZ, FILL_BOTH, FILL_HORIZ, \
-    EVAS_EVENT_FLAG_ON_HOLD
+from efl.evas import EXPAND_BOTH, EXPAND_HORIZ, EXPAND_VERT, \
+    FILL_BOTH, FILL_HORIZ, FILL_VERT, EVAS_EVENT_FLAG_ON_HOLD
 from efl.edje import Edje
 
 from efl import elementary
 from efl.elementary.background import Background
 from efl.elementary.button import Button
 from efl.elementary.box import Box
+from efl.elementary.entry import Entry
+from efl.elementary.frame import Frame
 from efl.elementary.genlist import Genlist, GenlistItemClass, \
     ELM_GENLIST_ITEM_TREE
 from efl.elementary.gengrid import Gengrid, GengridItemClass, \
@@ -57,9 +58,12 @@ from efl.elementary.spinner import Spinner
 from efl.elementary.table import Table
 from efl.elementary.thumb import Thumb, ETHUMB_THUMB_CROP
 from efl.elementary.toolbar import Toolbar
-from efl.elementary.window import StandardWindow
+from efl.elementary.window import StandardWindow, DialogWindow
 from efl.elementary.theme import theme_extension_add
 
+import eluminance.utils as utils
+
+__version__ = '0.9'
 
 IMG_EXTS = ('.jpg','.jpeg','.png','.gif','.tiff','.bmp')
 
@@ -69,36 +73,10 @@ data_path = os.path.join(install_prefix, 'share', 'eluminance')
 config_file = os.path.join(xdg_config_home, 'eluminance', 'config.pickle')
 THEME_FILE = os.path.join(data_path, 'themes', 'default.edj')
 
+
 def _(string):
     return string
 
-def clamp(low, val, high):
-    if val < low: return low
-    if val > high: return high
-    return val
-
-def file_hum_size(file_path):
-    bytes = float(os.path.getsize(file_path))
-    if bytes >= 1099511627776:
-        terabytes = bytes / 1099511627776
-        size = '%.1fT' % terabytes
-    elif bytes >= 1073741824:
-        gigabytes = bytes / 1073741824
-        size = '%.1fG' % gigabytes
-    elif bytes >= 1048576:
-        megabytes = bytes / 1048576
-        size = '%.1fM' % megabytes
-    elif bytes >= 1024:
-        kilobytes = bytes / 1024
-        size = '%.1fK' % kilobytes
-    else:
-        size = '%.1fb' % bytes
-    return size
-
-def natural_sort(l): 
-   convert = lambda text: int(text) if text.isdigit() else text.lower() 
-   alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)] 
-   return sorted(l, key=alphanum_key)
 
 class Options(object):
     """ Class for persistent application settings """
@@ -127,6 +105,7 @@ class Options(object):
             pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
 
 options = Options()
+
 
 class StdButton(Button):
     """ A Button with a standard fdo icon """
@@ -182,7 +161,7 @@ class TreeView(Genlist):
         item.subitems_clear()
 
     def populate(self, path, parent=None):
-        for f in natural_sort(os.listdir(path)):
+        for f in utils.natural_sort(os.listdir(path)):
             if f[0] == '.': continue
             fullpath = os.path.join(path, f)
             if os.path.isdir(fullpath):
@@ -302,7 +281,7 @@ class ScrollablePhoto(Scroller):
 
     @zoom.setter
     def zoom(self, val):
-        z = clamp(self.ZOOMS[0], val, self.ZOOMS[-1]) / 100.0
+        z = utils.clamp(self.ZOOMS[0], val, self.ZOOMS[-1]) / 100.0
         w, h = self.image_size[0] * z, self.image_size[1] * z
         self.img.size_hint_min = w, h
         self.img.size_hint_max = w, h
@@ -363,7 +342,7 @@ class ScrollablePhotocam(Photocam, Scrollable):
     def zoom_set(self, val):
         if isinstance(val, float):
             self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_MANUAL
-            self.zoom = clamp(self.ZOOMS[-1] ** -1, val, self.ZOOMS[0] ** -1)
+            self.zoom = utils.clamp(self.ZOOMS[-1] ** -1, val, self.ZOOMS[0] ** -1)
             self._zoom_change_cb(self)
         elif val == 'zoomorig':
             self.zoom_set(1.0)
@@ -479,10 +458,10 @@ class ScrollablePhotocam(Photocam, Scrollable):
         rel2y = float(y + h - py) / ph
 
         # constrain inside photo geometry
-        rel1x = clamp(0.0, rel1x, 1.0)
-        rel1y = clamp(0.0, rel1y, 1.0)
-        rel2x = clamp(0.0, rel2x, 1.0)
-        rel2y = clamp(0.0, rel2y, 1.0)
+        rel1x = utils.clamp(0.0, rel1x, 1.0)
+        rel1y = utils.clamp(0.0, rel1y, 1.0)
+        rel2x = utils.clamp(0.0, rel2x, 1.0)
+        rel2y = utils.clamp(0.0, rel2y, 1.0)
 
         # send signal to edje with new rels
         self.sel.message_send(1, (rel1x, rel1y, rel2x, rel2y))
@@ -516,7 +495,7 @@ class StatusBar(Box):
         self.lb_info.text = \
             '<b>{}:</b> {}x{}    <b>{}:</b> {}    <b>{}:</b> {:.0f}%'.format(
                 _('Resolution'), img_size[0], img_size[1],
-                _('Size'), file_hum_size(img_path),
+                _('Size'), utils.file_hum_size(img_path),
                 _('Zoom'), zoom)
 
 
@@ -547,6 +526,7 @@ class SlideShow(Slideshow):
             ('hover', _('Transition style'), None, None),
             ('sep', None, None, None),
             (None, _('Toggle fullscreen mode'), 'view-fullscreen', 'fs'),
+            (None, _('Eluminance info'), 'info', 'info'),
         ]
 
         for label, tooltip, icon, action in buttons:
@@ -637,6 +617,8 @@ class SlideShow(Slideshow):
             self.play() if self.timeout == 0 else self.pause()
         elif action == 'fs':
             self.parent.fullscreen = not self.parent.fullscreen
+        elif action == 'info':
+            InfoWin(self.parent)
         elif action in ('zoomin', 'zoomout', 'zoomfit', 'zoomfill', 'zoomorig'):
             self.photo.zoom_set(action)
 
@@ -698,6 +680,70 @@ class ImageEditor(object):
         self.bg.delete()
 
 
+class InfoWin(DialogWindow):
+    def __init__(self, parent):
+        DialogWindow.__init__(self, parent, 'eluminance-info', 'Eluminance',
+                              autodel=True)
+
+        fr = Frame(self, style='pad_large', size_hint_expand=EXPAND_BOTH,
+                   size_hint_align=FILL_BOTH)
+        self.resize_object_add(fr)
+        fr.show()
+
+        hbox = Box(self, horizontal=True, padding=(12,12))
+        fr.content = hbox
+        hbox.show()
+
+        vbox = Box(self, align=(0.0,0.0), padding=(6,6),
+                   size_hint_expand=EXPAND_VERT, size_hint_fill=FILL_VERT)
+        hbox.pack_end(vbox)
+        vbox.show()
+
+        # icon + version
+        ic = Icon(self, standard='eluminance', size_hint_min=(64,64))
+        vbox.pack_end(ic)
+        ic.show()
+
+        lb = Label(self, text=_('Version: %s') % __version__)
+        vbox.pack_end(lb)
+        lb.show()
+
+        sep = Separator(self, horizontal=True)
+        vbox.pack_end(sep)
+        sep.show()
+
+        # buttons
+        bt = Button(self, text=_('Eluminance'), size_hint_fill=FILL_HORIZ)
+        bt.callback_clicked_add(lambda b: self.entry.text_set(utils.INFO))
+        vbox.pack_end(bt)
+        bt.show()
+
+        bt = Button(self, text=_('Website'),size_hint_align=FILL_HORIZ)
+        bt.callback_clicked_add(lambda b: utils.xdg_open(utils.HOMEPAGE))
+        vbox.pack_end(bt)
+        bt.show()
+
+        bt = Button(self, text=_('Authors'), size_hint_align=FILL_HORIZ)
+        bt.callback_clicked_add(lambda b: self.entry.text_set(utils.AUTHORS))
+        vbox.pack_end(bt)
+        bt.show()
+
+        bt = Button(self, text=_('License'), size_hint_align=FILL_HORIZ)
+        bt.callback_clicked_add(lambda b: self.entry.text_set(utils.LICENSE))
+        vbox.pack_end(bt)
+        bt.show()
+
+        # main text
+        self.entry = Entry(self, editable=False, scrollable=True, text=utils.INFO,
+                           size_hint_expand=EXPAND_BOTH, size_hint_fill=FILL_BOTH)
+        self.entry.callback_anchor_clicked_add(lambda e,i: utils.xdg_open(i.name))
+        hbox.pack_end(self.entry)
+        self.entry.show()
+
+        self.resize(400, 200)
+        self.show()
+
+
 class MainWin(StandardWindow):
     def __init__(self):
         StandardWindow.__init__(self, 'eluminance', 'Eluminance',
@@ -743,7 +789,7 @@ class EluminanceApp(object):
         self.current_path = path
         self.sshow.clear()
         self.grid.clear()
-        for f in natural_sort(os.listdir(path)):
+        for f in utils.natural_sort(os.listdir(path)):
             if os.path.splitext(f)[-1].lower() in IMG_EXTS:
                 full_path = os.path.join(path, f)
                 self.grid.photo_add(full_path)
