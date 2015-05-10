@@ -175,13 +175,11 @@ class TreeView(Genlist):
         it = self.first_item
         while it:
             if it.data == path:
-                self.populate(it.data, it)
                 it.expanded = True
                 it.selected = True
                 it.show()
                 return
             if path.startswith(it.data + os.path.sep):
-                self.populate(it.data, it)
                 it.expanded = True
                 it = it.subitems_get()[0]
             else:
