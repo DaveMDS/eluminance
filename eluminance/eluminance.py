@@ -83,7 +83,7 @@ class Options(object):
     """ Class for persistent application settings """
     def __init__(self):
         self.sshow_timeout = 5.0
-        self.sshow_transition = 'horizontal'
+        self.sshow_transition = 'fade_fast'
 
     def load(self):
         try:
