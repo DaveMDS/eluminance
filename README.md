@@ -14,7 +14,7 @@ A fast photo browser written in python.
   * left to show the directory tree
 * Right mouse button on the photo to toggle the visibility of the tree and the thumbnails
 * Mouse wheel to change zoom
-* Drag the image to pan the photo
+* Drag the image to pan around
 
 ## Requirements ##
 
