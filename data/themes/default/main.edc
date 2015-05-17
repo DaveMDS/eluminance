@@ -139,7 +139,6 @@ collections {
             target: "grid_clip";
          }
 
-
          //// Grid  ----------------------------------------------------------
          part { name: "grid_clip"; type: RECT;
             description { state: "default" 0.0;
@@ -230,12 +229,12 @@ collections {
          part { name: "controls_event"; type: RECT;
             repeat_events: 1;
             description { state: "default" 0.0;
-               rel1.relative: 0.0 0.0;
-               rel2.relative: 1.0 0.0;
-               rel1.to_x: "controls_bg";
-               rel2.to_x: "controls_bg";
-               rel1.offset: -50 0;
-               rel2.offset: 50 50;
+               rel1.relative: 1.0 0.0;
+               rel2.relative: 0.0 0.0;
+               rel1.to_x: "tree_clip";
+               rel2.to_x: "grid_clip";
+               rel1.offset: 0 0;
+               rel2.offset: 0 50;
                color: 0 0 0 0;
             }
          }
