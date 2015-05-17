@@ -197,7 +197,7 @@ class TreeView(Table):
     def _item_clicked_right_cb(self, gl, item):
         if item.disabled: return
         item.selected = True
-        self.parent.layout.edje.play_set(False)
+        self.parent.freeze()
 
         pop = Ctxpopup(self.parent, direction_priority=(
                        ELM_CTXPOPUP_DIRECTION_RIGHT,ELM_CTXPOPUP_DIRECTION_DOWN,
@@ -229,7 +229,7 @@ class TreeView(Table):
         pop.dismiss()
 
     def _popup_dismissed_cb(self, pop):
-        self.parent.layout.edje.play_set(True)
+        self.parent.unfreeze()
         pop.delete()
 
     def _segment_changed_cb(self, sc, item):
@@ -644,8 +644,8 @@ class SlideShow(Slideshow):
             elif label == 'hover':
                 w = Hoversel(self, hover_parent=parent,
                              text=_(options.sshow_transition))
-                w.callback_clicked_add(lambda h: self.parent.layout.edje.play_set(False))
-                w.callback_dismissed_add(lambda h: self.parent.layout.edje.play_set(True))
+                w.callback_clicked_add(lambda h: self.parent.freeze())
+                w.callback_dismissed_add(lambda h: self.parent.unfreeze())
                 for t in self.TRANSITIONS:
                     w.item_add(t, None, 0, self._transition_cb, t)
                 self.hs_transition = w
@@ -858,6 +858,12 @@ class MainWin(StandardWindow):
         self.layout.content_set('grid.swallow', app.grid)
         self.layout.content_set('tree.swallow', app.tree)
         self.layout.content_set('status.swallow', app.status)
+    
+    def freeze(self):
+        self.layout.edje.play_set(False)
+
+    def unfreeze(self):
+        self.layout.edje.play_set(True)
 
 
 class EluminanceApp(object):
