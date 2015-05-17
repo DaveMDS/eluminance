@@ -160,6 +160,8 @@ class TreeView(Table):
         self.li.callback_contract_request_add(self._item_contract_request_cb)
         self.li.callback_contracted_add(self._item_contracted_cb)
         self.li.callback_clicked_double_add(self._item_expand_request_cb)
+        self.li.callback_clicked_right_add(self._item_clicked_right_cb)
+        self.li.callback_longpressed_add(self._item_clicked_right_cb)
         self.pack(self.li, 0, 1, 1, 1)
         self.li.show()
 
@@ -183,7 +185,17 @@ class TreeView(Table):
 
     def _item_contracted_cb(self, gl, item):
         item.subitems_clear()
-    
+
+    def _item_clicked_right_cb(self, gl, item):
+        item.selected = True
+        m = Menu(self.parent)
+        m.item_add(None, _('Set as root'), None, 
+                   lambda m,i: self.set_root(item.data))
+        # m.item_add(None, 'Favorite') # TODO
+        x, y = self.evas.pointer_canvas_xy_get()
+        m.move(x + 2, y)
+        m.show()
+
     def _segment_changed_cb(self, sc, item):
         self.set_root(item.data['path'], update_sc=False)
 
@@ -194,9 +206,11 @@ class TreeView(Table):
                 if it.data['path'] == path:
                     it.selected = True
                     return
-        else:
-            self.li.clear()
-            self.populate(path)
+            if self.sc.item_selected is not None:
+                self.sc.item_selected.selected = False
+
+        self.li.clear()
+        self.populate(path)
     
     def populate(self, path, parent=None):
         for f in utils.natural_sort(os.listdir(path)):
