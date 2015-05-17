@@ -34,6 +34,9 @@ from efl import elementary
 from efl.elementary.background import Background
 from efl.elementary.button import Button
 from efl.elementary.box import Box
+from efl.elementary.ctxpopup import Ctxpopup, \
+    ELM_CTXPOPUP_DIRECTION_RIGHT, ELM_CTXPOPUP_DIRECTION_LEFT, \
+    ELM_CTXPOPUP_DIRECTION_DOWN, ELM_CTXPOPUP_DIRECTION_UP
 from efl.elementary.entry import Entry
 from efl.elementary.frame import Frame
 from efl.elementary.genlist import Genlist, GenlistItemClass, \
@@ -194,18 +197,40 @@ class TreeView(Table):
     def _item_clicked_right_cb(self, gl, item):
         if item.disabled: return
         item.selected = True
-        m = Menu(self.parent)
-        m.item_add(None, _('Set as root'), None, 
-                   lambda m,i: self.set_root(item.data))
+        self.parent.layout.edje.play_set(False)
+
+        pop = Ctxpopup(self.parent, direction_priority=(
+                       ELM_CTXPOPUP_DIRECTION_RIGHT,ELM_CTXPOPUP_DIRECTION_DOWN,
+                       ELM_CTXPOPUP_DIRECTION_LEFT,ELM_CTXPOPUP_DIRECTION_UP))
+        pop.callback_dismissed_add(self._popup_dismissed_cb)
+        pop.item_append(_('Set as root'), None, 
+                        self._popup_set_root_cb, item.data)
         if item.data in options.favorites:
-            m.item_add(None, _('Remove from favorites'), 'bookmark-remove',
-                       lambda m,i: options.favorites.remove(item.data))
+            label = _('Remove from favorites')
+            icon = Icon(pop, standard='bookmark-remove')
         else:
-            m.item_add(None, _('Add to favorites'), 'bookmark-add',
-                       lambda m,i: options.favorites.append(item.data))
+            label = _('Add to favorites')
+            icon = Icon(pop, standard='bookmark-add')
+        pop.item_append(label, icon, self._popup_toggle_fav_cb, item.data)
+        
         x, y = self.evas.pointer_canvas_xy_get()
-        m.move(x + 2, y)
-        m.show()
+        pop.move(x, y)
+        pop.show()
+
+    def _popup_set_root_cb(self, pop, item, path):
+        self.set_root(path)
+        pop.dismiss()
+    
+    def _popup_toggle_fav_cb(self, pop, item, path):
+        if path in options.favorites:
+            options.favorites.remove(path)
+        else:
+            options.favorites.append(path)
+        pop.dismiss()
+
+    def _popup_dismissed_cb(self, pop):
+        self.parent.layout.edje.play_set(True)
+        pop.delete()
 
     def _segment_changed_cb(self, sc, item):
         self.set_root(item.data['path'], update_sc=False)
