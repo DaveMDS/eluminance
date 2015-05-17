@@ -54,6 +54,7 @@ from efl.elementary.scroller import Scrollable, ELM_SCROLLER_POLICY_OFF
 from efl.elementary.scroller import Scroller, \
     ELM_SCROLLER_MOVEMENT_BLOCK_VERTICAL, ELM_SCROLLER_MOVEMENT_BLOCK_HORIZONTAL
 from efl.elementary.separator import Separator
+from efl.elementary.segment_control import SegmentControl
 from efl.elementary.slideshow import Slideshow, SlideshowItemClass
 from efl.elementary.spinner import Spinner
 from efl.elementary.table import Table
@@ -124,21 +125,43 @@ class StdButton(Button):
         self.content = Icon(self, standard=name, resizable=(False, False))
 
 
-class TreeView(Genlist):
+class TreeView(Table):
     def __init__(self, parent, select_cb):
         self._select_cb = select_cb
-        Genlist.__init__(self, parent, size_hint_expand=EXPAND_BOTH,
-                         size_hint_fill=FILL_BOTH)
-        self.callback_selected_add(self._item_selected_cb)
-        self.callback_expand_request_add(self._item_expand_request_cb)
-        self.callback_expanded_add(self._item_expanded_cb)
-        self.callback_contract_request_add(self._item_contract_request_cb)
-        self.callback_contracted_add(self._item_contracted_cb)
-        self.callback_clicked_double_add(self._item_expand_request_cb)
-        self.show()
+
+        Table.__init__(self, parent, size_hint_expand=EXPAND_BOTH,
+                       size_hint_fill=FILL_BOTH)
+
+        bg = Background(self, size_hint_expand=EXPAND_BOTH, 
+                        size_hint_fill=FILL_BOTH)
+        self.pack(bg, 0, 0, 1, 2)
+        bg.show()
+
+        self.sc = SegmentControl(self)
+        it = self.sc.item_add(None, 'Home') # TODO: translate
+        it.data['path'] = os.path.expanduser('~')
+        it = self.sc.item_add(None, 'Root')
+        it.data['path'] = '/'
+        # self.sc.item_add(None, 'Favs') # TODO
+        self.sc.callback_changed_add(self._segment_changed_cb)
+        pad = Frame(self, style='pad_small', content=self.sc, 
+                    size_hint_expand=EXPAND_HORIZ)
+        self.pack(pad, 0, 0, 1, 1)
+        pad.show()
+        
         self.itc = GenlistItemClass('one_icon',
                                     text_get_func=self._gl_text_get,
                                     content_get_func=self._gl_content_get)
+        self.li = Genlist(self, size_hint_expand=EXPAND_BOTH,
+                          size_hint_fill=FILL_BOTH)
+        self.li.callback_selected_add(self._item_selected_cb)
+        self.li.callback_expand_request_add(self._item_expand_request_cb)
+        self.li.callback_expanded_add(self._item_expanded_cb)
+        self.li.callback_contract_request_add(self._item_contract_request_cb)
+        self.li.callback_contracted_add(self._item_contracted_cb)
+        self.li.callback_clicked_double_add(self._item_expand_request_cb)
+        self.pack(self.li, 0, 1, 1, 1)
+        self.li.show()
 
     def _gl_text_get(self, gl, part, item_data):
         return os.path.basename(item_data)
@@ -160,19 +183,33 @@ class TreeView(Genlist):
 
     def _item_contracted_cb(self, gl, item):
         item.subitems_clear()
+    
+    def _segment_changed_cb(self, sc, item):
+        self.set_root(item.data['path'], update_sc=False)
 
+    def set_root(self, path, update_sc=True):
+        if update_sc:
+            for idx in range(self.sc.item_count):
+                it = self.sc.item_get(idx)
+                if it.data['path'] == path:
+                    it.selected = True
+                    return
+        else:
+            self.li.clear()
+            self.populate(path)
+    
     def populate(self, path, parent=None):
         for f in utils.natural_sort(os.listdir(path)):
             if f[0] == '.': continue
             fullpath = os.path.join(path, f)
             if os.path.isdir(fullpath):
-                self.item_append(self.itc, fullpath, parent,
-                                 flags=ELM_GENLIST_ITEM_TREE)
+                self.li.item_append(self.itc, fullpath, parent,
+                                    flags=ELM_GENLIST_ITEM_TREE)
 
     def expand_to_folder(self, path):
         if os.path.isfile(path):
             path = os.path.dirname(path)
-        it = self.first_item
+        it = self.li.first_item
         while it:
             if it.data == path:
                 it.expanded = True
@@ -763,7 +800,6 @@ class MainWin(StandardWindow):
 
 class EluminanceApp(object):
     def __init__(self):
-
         self.win = MainWin()
         self.sshow = SlideShow(self.win, self.photo_changed, self.zoom_changed)
         self.grid = PhotoGrid(self.win, self.grid_selected)
@@ -771,16 +807,26 @@ class EluminanceApp(object):
         self.status = StatusBar(self.win)
         self.win.swallow_all(self)
 
-        self.current_path = os.path.expanduser('~')
+        home = os.path.expanduser('~')
+        self.current_path = home
         self.current_file = None
-        self.tree.populate(self.current_path)
+        request = None
 
         if len(sys.argv) > 1:
-            path = os.path.abspath(sys.argv[1])
-            if os.path.exists(path):
-                self.tree.expand_to_folder(path)
-                if os.path.isfile(path):
-                    self.grid.file_select(path)
+            request = os.path.abspath(sys.argv[1])
+            if not os.path.exists(request):
+                request = None
+
+        if request:
+            if request.startswith(home):
+                self.tree.set_root(home)
+            else:
+                self.tree.set_root('/')
+            self.tree.expand_to_folder(request)
+            if os.path.isfile(request):
+                self.grid.file_select(request)
+        else:
+            self.tree.set_root(home)
 
         self.win.show()
 
