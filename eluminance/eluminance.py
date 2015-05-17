@@ -644,6 +644,8 @@ class SlideShow(Slideshow):
             elif label == 'hover':
                 w = Hoversel(self, hover_parent=parent,
                              text=_(options.sshow_transition))
+                w.callback_clicked_add(lambda h: self.parent.layout.edje.play_set(False))
+                w.callback_dismissed_add(lambda h: self.parent.layout.edje.play_set(True))
                 for t in self.TRANSITIONS:
                     w.item_add(t, None, 0, self._transition_cb, t)
                 self.hs_transition = w
