@@ -85,6 +85,7 @@ class Options(object):
     def __init__(self):
         self.sshow_timeout = 5.0
         self.sshow_transition = 'fade_fast'
+        self.favorites = []
 
     def load(self):
         try:
@@ -142,7 +143,8 @@ class TreeView(Table):
         it.data['path'] = os.path.expanduser('~')
         it = self.sc.item_add(None, 'Root')
         it.data['path'] = '/'
-        # self.sc.item_add(None, 'Favs') # TODO
+        it = self.sc.item_add(None, 'Favs')
+        it.data['path'] = 'favs'
         self.sc.callback_changed_add(self._segment_changed_cb)
         pad = Frame(self, style='pad_small', content=self.sc, 
                     size_hint_expand=EXPAND_HORIZ)
@@ -169,7 +171,8 @@ class TreeView(Table):
         return os.path.basename(item_data)
 
     def _gl_content_get(self, gl, part, item_data):
-        return Icon(gl, standard='folder')
+        return Icon(gl, standard='starred' \
+                    if item_data in options.favorites else 'folder')
 
     def _item_selected_cb(self, gl, item):
         self._select_cb(item.data)
@@ -191,7 +194,12 @@ class TreeView(Table):
         m = Menu(self.parent)
         m.item_add(None, _('Set as root'), None, 
                    lambda m,i: self.set_root(item.data))
-        # m.item_add(None, 'Favorite') # TODO
+        if item.data in options.favorites:
+            m.item_add(None, _('Remove from favorites'), 'bookmark-remove',
+                       lambda m,i: options.favorites.remove(item.data))
+        else:
+            m.item_add(None, _('Add to favorites'), 'bookmark-add',
+                       lambda m,i: options.favorites.append(item.data))
         x, y = self.evas.pointer_canvas_xy_get()
         m.move(x + 2, y)
         m.show()
@@ -213,12 +221,18 @@ class TreeView(Table):
         self.populate(path)
     
     def populate(self, path, parent=None):
-        for f in utils.natural_sort(os.listdir(path)):
-            if f[0] == '.': continue
-            fullpath = os.path.join(path, f)
-            if os.path.isdir(fullpath):
-                self.li.item_append(self.itc, fullpath, parent,
+        if path == 'favs':
+            for path in utils.natural_sort(options.favorites):
+                self.li.item_append(self.itc, path, parent,
                                     flags=ELM_GENLIST_ITEM_TREE)
+        else:
+            for f in utils.natural_sort(os.listdir(path)):
+                if f[0] == '.': continue
+                fullpath = os.path.join(path, f)
+                if os.path.isdir(fullpath):
+                    self.li.item_append(self.itc, fullpath, parent,
+                                        flags=ELM_GENLIST_ITEM_TREE)
+        # TODO: show something if empty
 
     def expand_to_folder(self, path):
         if os.path.isfile(path):

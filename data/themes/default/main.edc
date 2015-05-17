@@ -380,6 +380,9 @@ collections {
    IC("preferences-system", "icon_preferences_system.png")
    IC("view-fullscreen", "icon_view_fullscreen.png")
    IC("info", "icon_info.png")
+   IC("bookmark-add", "icon_bookmark_add.png")
+   IC("bookmark-remove", "icon_bookmark_remove.png")
+   IC("starred", "icon_starred.png")
 #undef IC
 
 }
