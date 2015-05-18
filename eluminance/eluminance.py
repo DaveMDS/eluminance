@@ -349,6 +349,9 @@ class ScrollablePhoto(Scroller):
     def file_set(self, file):
         self.img.file_set(file)
         self.image_size = self.img.object_size
+        if self.img.animated_available:
+            self.img.animated = True
+            self.img.animated_play = True
 
     def zoom_set(self, val):
         self.fit = False
