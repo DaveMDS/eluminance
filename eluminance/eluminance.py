@@ -326,8 +326,8 @@ class ScrollablePhoto(Scroller):
              500, 750, 1000, 1500, 2000, 3000, 5000, 7500, 10000]
     def __init__(self, parent, zoom_changed_cb):
         self._zoom_changed_cb = zoom_changed_cb
+        self._zoom_mode = None # 'fill' or 'fit' on resize
         self.image_size = 0, 0 # original image pixel size
-        self.fit = True # keep image fitted on resize
 
         Scroller.__init__(self, parent, gravity=(0.5, 0.5), style="trans",
                     policy=(ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_OFF),
@@ -354,9 +354,13 @@ class ScrollablePhoto(Scroller):
             self.img.animated_play = True
 
     def zoom_set(self, val):
-        self.fit = False
+        self._zoom_mode = None
         if val == 'zoomfit':
-            self.fit = True
+            self._zoom_mode = 'fit'
+            self._on_resize(self)
+
+        if val == 'zoomfill':
+            self._zoom_mode = 'fill'
             self._on_resize(self)
 
         elif val == 'zoomorig':
@@ -384,12 +388,11 @@ class ScrollablePhoto(Scroller):
         w, h = self.image_size[0] * z, self.image_size[1] * z
         self.img.size_hint_min = w, h
         self.img.size_hint_max = w, h
-
         self._zoom_changed_cb(z * 100)
 
     # mouse wheel: zoom
     def _on_mouse_wheel(self, obj, event):
-        self.fit = False
+        self._zoom_mode = None
         self.zoom *= 0.9 if event.z == 1 else 1.1
 
     # mouse drag: pan
@@ -409,17 +412,15 @@ class ScrollablePhoto(Scroller):
         x, y, w, h = self._drag_start_region
         obj.region_show(x + dx, y + dy, w, h)
 
-    # scroller resize: keep the image fitted
+    # scroller resize: keep the image fitted or filled
     def _on_resize(self, obj):
-        if self.fit:
+        if self._zoom_mode is not None:
             cw, ch = self.region[2], self.region[3]
-            if cw <= 0 or ch <= 0: return
             iw, ih = self.image_size
-            if iw <= 0 or ih <= 0: return
-            zx = float(cw) / float(iw)
-            zy = float(ch) / float(ih)
-            zoom = zx if zx < zy else zy
-            self.zoom = zoom * 100
+            if cw > 0 and ch > 0 and iw > 0 and ih > 0:
+                zx, zy = float(cw) / float(iw), float(ch) / float(ih)
+                z = min(zx, zy) if self._zoom_mode == 'fit' else max(zx, zy)
+                self.zoom = z * 100
 
 
 class ScrollablePhotocam(Photocam, Scrollable):
@@ -616,7 +617,7 @@ class SlideShow(Slideshow):
             (None, _('Zoom out'), 'zoom-out', 'zoomout'),
             (None, _('Zoom 1:1'), 'zoom-original', 'zoomorig'),
             (None, _('Zoom fit'), 'zoom-fit-best', 'zoomfit'),
-            # (_('Zoom fill'), 'zoom-fit-best', 'zoomfill'),
+            (None, _('Zoom fill'), 'zoom-fit-best', 'zoomfill'),
             ('sep', None, None, None),
             (None, _('Previous photo'), 'go-previous', 'prev'),
             (None, _('Next photo'), 'go-next', 'next'),
