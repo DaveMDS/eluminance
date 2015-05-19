@@ -182,16 +182,7 @@ collections {
          }
 
          //// Controls  -------------------------------------------------------
-         part { name: "controls_clip"; type: RECT;
-            description { state: "default" 0.0;
-               color: 255 255 255 0;
-            }
-            description { state: "visible" 0.0;
-               color: 255 255 255 255;
-            }
-         }
          part { name: "controls_bg"; type: IMAGE;
-            clip_to: "controls_clip";
             description { state: "default" 0.0;
                rel1.to: "controls.box";
                rel2.to: "controls.box";
@@ -204,7 +195,6 @@ collections {
             }
          }
          part { name: "controls.box"; type: BOX;
-            clip_to: "controls_clip";
             description { state: "default" 0.0;
                rel1.relative: 0.5 0.0;
                rel2.relative: 0.5 0.0;
@@ -215,7 +205,7 @@ collections {
             description { state: "visible" 0.0;
                inherit: "default" 0.0;
                align: 0.5 0.0;
-               rel1.offset: 0 10;
+               rel1.offset: 0 3;
             }
          }
          part { name: "controls_event"; type: RECT;
@@ -226,7 +216,7 @@ collections {
                rel1.to_x: "tree_clip";
                rel2.to_x: "grid_clip";
                rel1.offset: 0 0;
-               rel2.offset: 0 50;
+               rel2.offset: 0 35;
                color: 0 0 0 0;
             }
          }
@@ -235,7 +225,6 @@ collections {
             action: STATE_SET "visible" 0.0;
             transition: DECEL 0.2;
             target: "controls.box";
-            target: "controls_clip";
             after: "show status in play mode";
          }
          program { name: "show status in play mode";
@@ -246,9 +235,8 @@ collections {
             action: STATE_SET "default" 0.0;
             transition: ACCEL 0.2;
             target: "controls.box";
-            target: "controls_clip";
             after: "hide status in play mode";
-            in: 2.0 0;
+            in: 0.5 0;
          }
          program { name: "hide status in play mode";
             action: SIGNAL_EMIT "status,hide" "";
@@ -298,7 +286,6 @@ collections {
                }
             }
          }
-
          program { signal: "eluminance,play"; source: "eluminance";
             action: STATE_SET "hidden" 0.0;
             transition: ACCEL 0.3;
