@@ -355,24 +355,17 @@ class ScrollablePhoto(Scroller):
 
     def zoom_set(self, val):
         self._zoom_mode = None
-        if val == 'zoomfit':
-            self._zoom_mode = 'fit'
+        if val == 'fit' or val == 'fill':
+            self._zoom_mode = val
             self._on_resize(self)
-
-        if val == 'zoomfill':
-            self._zoom_mode = 'fill'
-            self._on_resize(self)
-
-        elif val == 'zoomorig':
+        elif val == '1:1':
             self.zoom = 100
-
-        elif val == 'zoomin':
+        elif val == 'in':
             cur = self.zoom + 1
             for z in self.ZOOMS:
                 if cur < z: break
             self.zoom = z
-
-        elif val == 'zoomout':
+        elif val == 'out':
             cur = self.zoom - 1
             for z in reversed(self.ZOOMS):
                 if cur > z: break
@@ -444,18 +437,18 @@ class ScrollablePhotocam(Photocam, Scrollable):
             self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_MANUAL
             self.zoom = utils.clamp(self.ZOOMS[-1] ** -1, val, self.ZOOMS[0] ** -1)
             self._zoom_change_cb(self)
-        elif val == 'zoomorig':
+        elif val == '1:1':
             self.zoom_set(1.0)
-        elif val == 'zoomfill':
+        elif val == 'fill':
             self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_AUTO_FILL
-        elif val == 'zoomfit':
+        elif val == 'fit':
             self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT
-        elif val == 'zoomin':
+        elif val == 'in':
             old = self.zoom ** -1
             for z in self.ZOOMS:
                 if old < z: break
             self.zoom_set(z ** -1)
-        elif val == 'zoomout':
+        elif val == 'out':
             old = self.zoom ** -1
             for z in reversed(self.ZOOMS):
                 if old > z: break
@@ -613,11 +606,11 @@ class SlideShow(Slideshow):
 
         # Normal buttons
         buttons = [ # (label, tooltip, icon, action)
-            (None, _('Zoom in'), 'zoom-in', 'zoomin'),
-            (None, _('Zoom out'), 'zoom-out', 'zoomout'),
-            (None, _('Zoom 1:1'), 'zoom-original', 'zoomorig'),
-            (None, _('Zoom fit'), 'zoom-fit-best', 'zoomfit'),
-            (None, _('Zoom fill'), 'zoom-fit-best', 'zoomfill'),
+            (None, _('Zoom in'), 'zoom-in', 'in'),
+            (None, _('Zoom out'), 'zoom-out', 'out'),
+            (None, _('Zoom 1:1'), 'zoom-original', '1:1'),
+            (None, _('Zoom fit'), 'zoom-fit-best', 'fit'),
+            (None, _('Zoom fill'), 'zoom-fit-best', 'fill'),
             ('sep', None, None, None),
             (None, _('Previous photo'), 'go-previous', 'prev'),
             (None, _('Next photo'), 'go-next', 'next'),
@@ -702,7 +695,7 @@ class SlideShow(Slideshow):
         # img = ScrollablePhotocam(self, self._zoom_changed_cb)
         img = ScrollablePhoto(self, self._zoom_changed_cb)
         img.file_set(path)
-        img.zoom_set('zoomfit')
+        img.zoom_set('fit')
         return img
 
     def _changed_cb(self, obj, item):
@@ -721,7 +714,7 @@ class SlideShow(Slideshow):
             self.parent.fullscreen = not self.parent.fullscreen
         elif action == 'info':
             InfoWin(self.parent)
-        elif action in ('zoomin', 'zoomout', 'zoomfit', 'zoomfill', 'zoomorig'):
+        elif action in ('in', 'out', 'fit', 'fill', '1:1'):
             self.photo.zoom_set(action)
 
     def _spinner_cb(self, spinner):
