@@ -394,10 +394,12 @@ class ScrollablePhoto(Scroller):
             self._drag_start_region = obj.region
             self._drag_start_x, self._drag_start_y = event.position.canvas
             obj.on_mouse_move_add(self._on_mouse_move)
+            obj.cursor = 'fleur'
 
     def _on_mouse_up(self, obj, event):
         if event.button in (1, 2):
             obj.on_mouse_move_del(self._on_mouse_move)
+            obj.cursor = None
 
     def _on_mouse_move(self, obj, event):
         x, y = event.position.canvas
