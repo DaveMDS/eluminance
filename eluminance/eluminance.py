@@ -329,7 +329,7 @@ class ScrollablePhoto(Scroller):
         self._zoom_mode = None # 'fill' or 'fit' on resize
         self.image_size = 0, 0 # original image pixel size
 
-        Scroller.__init__(self, parent, gravity=(0.5, 0.5), style="trans",
+        Scroller.__init__(self, parent, style="trans",
                     policy=(ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_OFF),
                     movement_block=ELM_SCROLLER_MOVEMENT_BLOCK_VERTICAL |
                                    ELM_SCROLLER_MOVEMENT_BLOCK_HORIZONTAL)
@@ -364,12 +364,12 @@ class ScrollablePhoto(Scroller):
             cur = self.zoom + 1
             for z in self.ZOOMS:
                 if cur < z: break
-            self.zoom = z
+            self.zoom_centered(z)
         elif val == 'out':
             cur = self.zoom - 1
             for z in reversed(self.ZOOMS):
                 if cur > z: break
-            self.zoom = z
+            self.zoom_centered(z)
 
     @property
     def zoom(self):
@@ -383,10 +383,25 @@ class ScrollablePhoto(Scroller):
         self.img.size_hint_max = w, h
         self._zoom_changed_cb(z * 100)
 
+    def zoom_centered(self, val, center_on_mouse=False):
+        iw, ih = self.img.size
+        if ih > 0 and ih > 0:
+            rx, ry, rw, rh = self.region
+            cx, cy = self.evas.pointer_canvas_xy if center_on_mouse else \
+                     (rw / 2, rh / 2)
+            dy, dx = float(cy + ry) / ih, float(cx + rx) / iw
+
+        self.zoom = val
+        if ih > 0 and ih > 0:
+            w, h = self.img.size_hint_min
+            rx, ry = int(w * dx) - cx, int(h * dy) - cy
+            self.region_show(rx, ry, rw, rh)
+    
     # mouse wheel: zoom
     def _on_mouse_wheel(self, obj, event):
         self._zoom_mode = None
-        self.zoom *= 0.9 if event.z == 1 else 1.1
+        val = self.zoom * (0.9 if event.z == 1 else 1.1)
+        self.zoom_centered(val, center_on_mouse=True)
 
     # mouse drag: pan
     def _on_mouse_down(self, obj, event):
@@ -415,7 +430,7 @@ class ScrollablePhoto(Scroller):
             if cw > 0 and ch > 0 and iw > 0 and ih > 0:
                 zx, zy = float(cw) / float(iw), float(ch) / float(ih)
                 z = min(zx, zy) if self._zoom_mode == 'fit' else max(zx, zy)
-                self.zoom = z * 100
+                self.zoom_centered(z * 100)
 
 
 class ScrollablePhotocam(Photocam, Scrollable):
