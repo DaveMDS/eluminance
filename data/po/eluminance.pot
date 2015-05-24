@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-05-09 14:17+0200\n"
+"POT-Creation-Date: 2015-05-24 18:13+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,96 +17,116 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: eluminance/eluminance.py:478
+#: eluminance/eluminance.py:174
+msgid "No items to show"
+msgstr ""
+
+#: eluminance/eluminance.py:206
+msgid "Set as root"
+msgstr ""
+
+#: eluminance/eluminance.py:209
+msgid "Remove from favorites"
+msgstr ""
+
+#: eluminance/eluminance.py:212
+msgid "Add to favorites"
+msgstr ""
+
+#: eluminance/eluminance.py:587
 msgid "No image selected"
 msgstr ""
 
-#: eluminance/eluminance.py:494
+#: eluminance/eluminance.py:603
 #, python-brace-format
 msgid "File {0} of {1}"
 msgstr ""
 
-#: eluminance/eluminance.py:498
+#: eluminance/eluminance.py:607
 msgid "Resolution"
 msgstr ""
 
-#: eluminance/eluminance.py:499
+#: eluminance/eluminance.py:608
 msgid "Size"
 msgstr ""
 
-#: eluminance/eluminance.py:500
+#: eluminance/eluminance.py:609
 msgid "Zoom"
 msgstr ""
 
-#: eluminance/eluminance.py:517
+#: eluminance/eluminance.py:626
 msgid "Zoom in"
 msgstr ""
 
-#: eluminance/eluminance.py:518
+#: eluminance/eluminance.py:627
 msgid "Zoom out"
 msgstr ""
 
-#: eluminance/eluminance.py:519
+#: eluminance/eluminance.py:628
 msgid "Zoom 1:1"
 msgstr ""
 
-#: eluminance/eluminance.py:520
+#: eluminance/eluminance.py:629
 msgid "Zoom fit"
 msgstr ""
 
-#: eluminance/eluminance.py:523
+#: eluminance/eluminance.py:630
+msgid "Zoom fill"
+msgstr ""
+
+#: eluminance/eluminance.py:632
 msgid "Previous photo"
 msgstr ""
 
-#: eluminance/eluminance.py:524
+#: eluminance/eluminance.py:633
 msgid "Next photo"
 msgstr ""
 
-#: eluminance/eluminance.py:525
+#: eluminance/eluminance.py:634
 msgid "Start/Stop slideshow"
 msgstr ""
 
-#: eluminance/eluminance.py:526
+#: eluminance/eluminance.py:635
 msgid "Transition time"
 msgstr ""
 
-#: eluminance/eluminance.py:527
+#: eluminance/eluminance.py:636
 msgid "Transition style"
 msgstr ""
 
-#: eluminance/eluminance.py:529
+#: eluminance/eluminance.py:638
 msgid "Toggle fullscreen mode"
 msgstr ""
 
-#: eluminance/eluminance.py:530
+#: eluminance/eluminance.py:639
 msgid "Eluminance info"
 msgstr ""
 
-#: eluminance/eluminance.py:538 eluminance/eluminance.py:585
+#: eluminance/eluminance.py:647 eluminance/eluminance.py:696
 msgid "Play"
 msgstr ""
 
-#: eluminance/eluminance.py:578
+#: eluminance/eluminance.py:689
 msgid "Pause"
 msgstr ""
 
-#: eluminance/eluminance.py:708
+#: eluminance/eluminance.py:819
 #, python-format
 msgid "Version: %s"
 msgstr ""
 
-#: eluminance/eluminance.py:717
+#: eluminance/eluminance.py:828
 msgid "Eluminance"
 msgstr ""
 
-#: eluminance/eluminance.py:722
+#: eluminance/eluminance.py:833
 msgid "Website"
 msgstr ""
 
-#: eluminance/eluminance.py:727
+#: eluminance/eluminance.py:838
 msgid "Authors"
 msgstr ""
 
-#: eluminance/eluminance.py:732
+#: eluminance/eluminance.py:843
 msgid "License"
 msgstr ""
