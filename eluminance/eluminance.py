@@ -333,9 +333,9 @@ class ScrollablePhoto(Scroller):
                     policy=(ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_OFF),
                     movement_block=ELM_SCROLLER_MOVEMENT_BLOCK_VERTICAL |
                                    ELM_SCROLLER_MOVEMENT_BLOCK_HORIZONTAL)
+        self.on_mouse_wheel_add(self._on_mouse_wheel)
         self.on_mouse_down_add(self._on_mouse_down)
         self.on_mouse_up_add(self._on_mouse_up)
-        self.parent.on_mouse_wheel_add(self._on_mouse_wheel)
         self.parent.on_resize_add(self._on_resize)
 
         self.img = Image(self, preload_disabled=False)
