@@ -1,0 +1,112 @@
+# German translation for Eluminance
+# Copyright (C) 2015 Davide Andreoli <dave@gurumeditation.it>
+# This file is distributed under the same license as the Eluminance package.
+# Davide Andreoli <dave@gurumeditation.it>, 2015.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Eluminance 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2015-05-09 14:17+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Wolfgang Morawetz <wolfgang.morawetz@gmail.com>\n"
+"Language-Team: \n"
+"Language: German\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#: eluminance/eluminance.py:478
+msgid "No image selected"
+msgstr "Kein Bild ausgewählt"
+
+#: eluminance/eluminance.py:494
+#, python-brace-format
+msgid "File {0} of {1}"
+msgstr "Datei {0} von {1}"
+
+#: eluminance/eluminance.py:498
+msgid "Resolution"
+msgstr "Auflösung"
+
+#: eluminance/eluminance.py:499
+msgid "Size"
+msgstr "Größe"
+
+#: eluminance/eluminance.py:500
+msgid "Zoom"
+msgstr "Bildvergrößerung"
+
+#: eluminance/eluminance.py:517
+msgid "Zoom in"
+msgstr "Vergrößern"
+
+#: eluminance/eluminance.py:518
+msgid "Zoom out"
+msgstr "Verkleinern"
+
+#: eluminance/eluminance.py:519
+msgid "Zoom 1:1"
+msgstr "Normale Göße"
+
+#: eluminance/eluminance.py:520
+msgid "Zoom fit"
+msgstr "Einpassen"
+
+#: eluminance/eluminance.py:523
+msgid "Previous photo"
+msgstr "Vorheriges Bild"
+
+#: eluminance/eluminance.py:524
+msgid "Next photo"
+msgstr "Nächstes Bild"
+
+#: eluminance/eluminance.py:525
+msgid "Start/Stop slideshow"
+msgstr "Start/Stop Diaschau"
+
+#: eluminance/eluminance.py:526
+msgid "Transition time"
+msgstr "Übergangszeit"
+
+#: eluminance/eluminance.py:527
+msgid "Transition style"
+msgstr "Übergangsstil"
+
+#: eluminance/eluminance.py:529
+msgid "Toggle fullscreen mode"
+msgstr "Wechsle Vollbildmodus"
+
+#: eluminance/eluminance.py:530
+msgid "Eluminance info"
+msgstr "Eluminance info"
+
+#: eluminance/eluminance.py:538 eluminance/eluminance.py:585
+msgid "Play"
+msgstr "Abspielen"
+
+#: eluminance/eluminance.py:578
+msgid "Pause"
+msgstr "Pause"
+
+#: eluminance/eluminance.py:708
+#, python-format
+msgid "Version: %s"
+msgstr "Version: %s"
+
+#: eluminance/eluminance.py:717
+msgid "Eluminance"
+msgstr "Eluminance"
+
+#: eluminance/eluminance.py:722
+msgid "Website"
+msgstr "Webseite"
+
+#: eluminance/eluminance.py:727
+msgid "Authors"
+msgstr "Autoren"
+
+#: eluminance/eluminance.py:732
+msgid "License"
+msgstr "Lizenz"
