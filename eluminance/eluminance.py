@@ -336,15 +336,10 @@ class ScrollablePhoto(Scroller):
         self.on_mouse_wheel_add(self._on_mouse_wheel)
         self.on_mouse_down_add(self._on_mouse_down)
         self.on_mouse_up_add(self._on_mouse_up)
-        self.on_resize_add(self._on_resize)
+        self.parent.on_resize_add(self._on_resize)
 
         self.img = Image(self, preload_disabled=False)
-        self.img.show()
-
-        # table help to keep the image centered in the scroller
-        tb = Table(self, size_hint_expand=EXPAND_BOTH, size_hint_fill=FILL_BOTH)
-        tb.pack(self.img, 0, 0, 1, 1)
-        self.content = tb
+        self.content = self.img
 
     def file_set(self, file):
         self.img.file_set(file)
@@ -357,7 +352,7 @@ class ScrollablePhoto(Scroller):
         self._zoom_mode = None
         if val == 'fit' or val == 'fill':
             self._zoom_mode = val
-            self._on_resize(self)
+            self._on_resize(self.parent)
         elif val == '1:1':
             self.zoom = 100
         elif val == 'in':
@@ -379,6 +374,8 @@ class ScrollablePhoto(Scroller):
     def zoom(self, val):
         z = utils.clamp(self.ZOOMS[0], val, self.ZOOMS[-1]) / 100.0
         w, h = self.image_size[0] * z, self.image_size[1] * z
+        self.size_hint_min = w, h
+        self.size_hint_max = w, h
         self.img.size_hint_min = w, h
         self.img.size_hint_max = w, h
         self._zoom_changed_cb(z * 100)
@@ -422,10 +419,10 @@ class ScrollablePhoto(Scroller):
         x, y, w, h = self._drag_start_region
         obj.region_show(x + dx, y + dy, w, h)
 
-    # scroller resize: keep the image fitted or filled
-    def _on_resize(self, obj):
+    # parent resize: keep the image fitted or filled
+    def _on_resize(self, parent):
         if self._zoom_mode is not None:
-            cw, ch = self.region[2], self.region[3]
+            cw, ch = parent.size
             iw, ih = self.image_size
             if cw > 0 and ch > 0 and iw > 0 and ih > 0:
                 zx, zy = float(cw) / float(iw), float(ch) / float(ih)
