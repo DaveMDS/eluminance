@@ -2,36 +2,38 @@
 # Copyright (C) 2015 Davide Andreoli <dave@gurumeditation.it>
 # This file is distributed under the same license as the Eluminance package.
 # Davide Andreoli <dave@gurumeditation.it>, 2015.
+# Wolfgang Morawetz <wolfgang.morawetz@gmail.com>, 2015.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: Eluminance 1.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2015-05-24 18:13+0200\n"
-"PO-Revision-Date: 2015-05-24 18:14+0200\n"
+"PO-Revision-Date: 2015-10-10 19:46+0200\n"
 "Last-Translator: Wolfgang Morawetz <wolfgang.morawetz@gmail.com>\n"
-"Language-Team: \n"
+"Language-Team: Deutsch <>\n"
 "Language: German\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Gtranslator 2.91.7\n"
 
 #: eluminance/eluminance.py:174
 msgid "No items to show"
-msgstr ""
+msgstr "Keine einträge vorhanden"
 
 #: eluminance/eluminance.py:206
 msgid "Set as root"
-msgstr ""
+msgstr "Hauptverzeichnis Festlegen"
 
 #: eluminance/eluminance.py:209
 msgid "Remove from favorites"
-msgstr ""
+msgstr "Aus Favoriten entfernen"
 
 #: eluminance/eluminance.py:212
 msgid "Add to favorites"
-msgstr ""
+msgstr "Zu Favoriten hinzufügen"
 
 #: eluminance/eluminance.py:587
 msgid "No image selected"
@@ -64,7 +66,7 @@ msgstr "Verkleinern"
 
 #: eluminance/eluminance.py:628
 msgid "Zoom 1:1"
-msgstr "Normale Göße"
+msgstr "Original Göße"
 
 #: eluminance/eluminance.py:629
 msgid "Zoom fit"
@@ -72,7 +74,7 @@ msgstr "Einpassen"
 
 #: eluminance/eluminance.py:630
 msgid "Zoom fill"
-msgstr ""
+msgstr "Anpassen"
 
 #: eluminance/eluminance.py:632
 msgid "Previous photo"
