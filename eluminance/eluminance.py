@@ -126,7 +126,7 @@ class StdButton(Button):
 
     @icon.setter
     def icon(self, name):
-        self.content = Icon(self, standard=name, resizable=(False, False))
+        self.content = Icon(self, standard=name, size_hint_min=(18,18))
 
 
 class TreeView(Table):
@@ -175,9 +175,9 @@ class TreeView(Table):
         return os.path.basename(item_data)
 
     def _gl_content_get(self, gl, part, item_data):
-        if item_data is None: return None
-        return Icon(gl, standard='starred' \
-                    if item_data in options.favorites else 'folder')
+        if item_data is not None:
+            icon = 'starred' if item_data in options.favorites else 'folder'
+            return Icon(gl, standard=icon, resizable=(False,False))
 
     def _item_selected_cb(self, gl, item):
         self._select_cb(item.data)
@@ -264,7 +264,6 @@ class TreeView(Table):
         if it is None:
             it = self.li.item_append(self.itc, None, parent)
             it.disabled = True
-        
 
     def expand_to_folder(self, path):
         if os.path.isfile(path):
@@ -626,8 +625,8 @@ class SlideShow(Slideshow):
             (None, _('Zoom in'), 'zoom-in', 'in'),
             (None, _('Zoom out'), 'zoom-out', 'out'),
             (None, _('Zoom 1:1'), 'zoom-original', '1:1'),
-            (None, _('Zoom fit'), 'zoom-fit-best', 'fit'),
-            (None, _('Zoom fill'), 'zoom-fit-best', 'fill'),
+            (None, _('Zoom fit'), 'zoom-fit', 'fit'),
+            (None, _('Zoom fill'), 'zoom-fill', 'fill'),
             ('sep', None, None, None),
             (None, _('Previous photo'), 'go-previous', 'prev'),
             (None, _('Next photo'), 'go-next', 'next'),
@@ -636,7 +635,7 @@ class SlideShow(Slideshow):
             ('hover', _('Transition style'), None, None),
             ('sep', None, None, None),
             (None, _('Toggle fullscreen mode'), 'view-fullscreen', 'fs'),
-            (None, _('Eluminance info'), 'info', 'info'),
+            (None, _('Eluminance info'), 'help-about', 'info'),
         ]
 
         for label, tooltip, icon, action in buttons:
