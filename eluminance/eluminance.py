@@ -620,8 +620,7 @@ class SlideShow(Slideshow):
                            transition=options.sshow_transition)
         self.callback_changed_add(self._changed_cb)
 
-        # Normal buttons
-        buttons = [ # (label, tooltip, icon, action)
+        buttons = [ # (mode, tooltip, icon, action)
             (None, _('Zoom in'), 'zoom-in', 'in'),
             (None, _('Zoom out'), 'zoom-out', 'out'),
             (None, _('Zoom 1:1'), 'zoom-original', '1:1'),
@@ -638,23 +637,23 @@ class SlideShow(Slideshow):
             (None, _('Eluminance info'), 'help-about', 'info'),
         ]
 
-        for label, tooltip, icon, action in buttons:
-            if label == 'sep':
+        for mode, tooltip, icon, action in buttons:
+            if mode == 'sep':
                 w = Separator(self)
             # Play/Pause toggle button
-            elif label == 'toggle':
+            elif mode == 'toggle':
                 w = StdButton(self, icon='media-playback-start', text=_('Play'))
                 w.callback_clicked_add(self._buttons_cb, 'slideshow')
                 self.toggle_btn = w
             # timeout spinner
-            elif label == 'spinner': 
+            elif mode == 'spinner': 
                 w = Spinner(self, label_format="%2.0f secs.",
                                        step=1, min_max=(3, 60),
                                        value=options.sshow_timeout)
                 w.callback_changed_add(self._spinner_cb)
                 self.spinner = w
             # Transition selector
-            elif label == 'hover':
+            elif mode == 'hover':
                 w = Hoversel(self, hover_parent=parent,
                              text=_(options.sshow_transition))
                 w.callback_clicked_add(lambda h: self.parent.freeze())
@@ -664,7 +663,7 @@ class SlideShow(Slideshow):
                 self.hs_transition = w
             # normal buttons
             else: 
-                w = StdButton(self, icon=icon, text=label)
+                w = StdButton(self, icon=icon)
                 w.callback_clicked_add(self._buttons_cb, action)
 
             parent.layout.box_append('controls.box', w)
