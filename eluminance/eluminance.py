@@ -110,6 +110,7 @@ class Options(object):
         with open(config_file, 'wb') as f:
             pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
 
+app = None
 options = Options()
 
 
@@ -197,9 +198,9 @@ class TreeView(Table):
     def _item_clicked_right_cb(self, gl, item):
         if item.disabled: return
         item.selected = True
-        self.parent.freeze()
+        app.win.freeze()
 
-        pop = Ctxpopup(self.parent, direction_priority=(
+        pop = Ctxpopup(app.win, direction_priority=(
                        ELM_CTXPOPUP_DIRECTION_RIGHT,ELM_CTXPOPUP_DIRECTION_DOWN,
                        ELM_CTXPOPUP_DIRECTION_LEFT,ELM_CTXPOPUP_DIRECTION_UP))
         pop.callback_dismissed_add(self._popup_dismissed_cb)
@@ -229,7 +230,7 @@ class TreeView(Table):
         pop.dismiss()
 
     def _popup_dismissed_cb(self, pop):
-        self.parent.unfreeze()
+        app.win.unfreeze()
         pop.delete()
 
     def _segment_changed_cb(self, sc, item):
@@ -656,8 +657,8 @@ class SlideShow(Slideshow):
             elif mode == 'hover':
                 w = Hoversel(self, hover_parent=parent,
                              text=_(options.sshow_transition))
-                w.callback_clicked_add(lambda h: self.parent.freeze())
-                w.callback_dismissed_add(lambda h: self.parent.unfreeze())
+                w.callback_clicked_add(lambda h: app.win.freeze())
+                w.callback_dismissed_add(lambda h: app.win.unfreeze())
                 for t in self.TRANSITIONS:
                     w.item_add(t, None, 0, self._transition_cb, t)
                 self.hs_transition = w
@@ -669,7 +670,6 @@ class SlideShow(Slideshow):
             parent.layout.box_append('controls.box', w)
             w.tooltip_text_set(tooltip)
             w.show()
-
 
     def photo_add(self, path):
         item_data = (path, self.count + 1)
@@ -687,14 +687,14 @@ class SlideShow(Slideshow):
         self.toggle_btn.text = _('Pause')
         self.toggle_btn.icon = 'media-playback-pause'
         self.signal_emit('eluminance,play', 'eluminance')
-        self.parent.layout.signal_emit('eluminance,play', 'eluminance')
+        app.win.layout.signal_emit('eluminance,play', 'eluminance')
 
     def pause(self):
         self.timeout = 0.0
         self.toggle_btn.text = _('Play')
         self.toggle_btn.icon = 'media-playback-start'
         self.signal_emit('eluminance,pause', 'eluminance')
-        self.parent.layout.signal_emit('eluminance,pause', 'eluminance')
+        app.win.layout.signal_emit('eluminance,pause', 'eluminance')
 
     @property
     def photo(self):
@@ -726,9 +726,9 @@ class SlideShow(Slideshow):
         elif action == 'slideshow':
             self.play() if self.timeout == 0 else self.pause()
         elif action == 'fs':
-            self.parent.fullscreen = not self.parent.fullscreen
+            app.win.fullscreen = not app.win.fullscreen
         elif action == 'info':
-            InfoWin(self.parent)
+            InfoWin(app.win)
         elif action in ('in', 'out', 'fit', 'fill', '1:1'):
             self.photo.zoom_set(action)
 
@@ -740,54 +740,6 @@ class SlideShow(Slideshow):
     def _transition_cb(self, hoversel, item, transition):
         self.transition = options.sshow_transition = transition
         self.hs_transition.text = _(transition)
-
-
-class ImageEditor(object):
-    def __init__(self, app):
-        self.bg = Background(app.win, size_hint_expand=EXPAND_BOTH)
-        app.win.resize_object_add(self.bg)
-        self.bg.show()
-
-        box = Box(self.bg, size_hint_expand=EXPAND_BOTH,
-                  size_hint_fill=FILL_BOTH)
-        app.win.resize_object_add(box)
-        box.show()
-
-        tb = Toolbar(app.win, homogeneous=True, menu_parent=app.win,
-                     size_hint_expand=EXPAND_HORIZ,
-                     size_hint_fill=FILL_HORIZ)
-
-        item = tb.item_append('rotate', 'Rotate')
-        item.menu = True
-        item.menu.item_add(None, 'Rotate Right', 'object-rotate-right')
-        item.menu.item_add(None, 'Rotate Left', 'object-rotate-left')
-        item.menu.item_add(None, 'Mirror', 'object-flip-horizontal')
-        item.menu.item_add(None, 'Flip', 'object-flip-vertical')
-
-        tb.item_append('edit-cut', 'Crop', self._crop_item_cb)
-        tb.item_append('resize', 'Resize')
-
-        sep = tb.item_append(None, None)
-        sep.separator = True
-
-        tb.item_append('document-save', 'Save')
-        tb.item_append('document-save-as', 'Save as')
-        tb.item_append('document-close', 'Close', self._close_item_cb)
-
-        box.pack_end(tb)
-        tb.show()
-
-        self.photo = ScrollablePhotocam(app, box, file=app.photo.file,
-                                        size_hint_expand=EXPAND_BOTH,
-                                        size_hint_fill=FILL_BOTH)
-        box.pack_end(self.photo)
-        self.photo.show()
-
-    def _crop_item_cb(self, tb, item):
-        self.photo.region_selector_show()
-
-    def _close_item_cb(self, tb, item):
-        self.bg.delete()
 
 
 class InfoWin(DialogWindow):
@@ -940,9 +892,61 @@ def main():
     options.load()
     elementary.need_ethumb()
     theme_extension_add(THEME_FILE)
-    EluminanceApp()
+
+    global app
+    app = EluminanceApp()
     elementary.run()
     options.save()
 
 if __name__ == '__main__':
     sys.exit(main())
+
+
+"""
+class ImageEditor(object):
+    def __init__(self, app):
+        self.bg = Background(app.win, size_hint_expand=EXPAND_BOTH)
+        app.win.resize_object_add(self.bg)
+        self.bg.show()
+
+        box = Box(self.bg, size_hint_expand=EXPAND_BOTH,
+                  size_hint_fill=FILL_BOTH)
+        app.win.resize_object_add(box)
+        box.show()
+
+        tb = Toolbar(app.win, homogeneous=True, menu_parent=app.win,
+                     size_hint_expand=EXPAND_HORIZ,
+                     size_hint_fill=FILL_HORIZ)
+
+        item = tb.item_append('rotate', 'Rotate')
+        item.menu = True
+        item.menu.item_add(None, 'Rotate Right', 'object-rotate-right')
+        item.menu.item_add(None, 'Rotate Left', 'object-rotate-left')
+        item.menu.item_add(None, 'Mirror', 'object-flip-horizontal')
+        item.menu.item_add(None, 'Flip', 'object-flip-vertical')
+
+        tb.item_append('edit-cut', 'Crop', self._crop_item_cb)
+        tb.item_append('resize', 'Resize')
+
+        sep = tb.item_append(None, None)
+        sep.separator = True
+
+        tb.item_append('document-save', 'Save')
+        tb.item_append('document-save-as', 'Save as')
+        tb.item_append('document-close', 'Close', self._close_item_cb)
+
+        box.pack_end(tb)
+        tb.show()
+
+        self.photo = ScrollablePhotocam(app, box, file=app.photo.file,
+                                        size_hint_expand=EXPAND_BOTH,
+                                        size_hint_fill=FILL_BOTH)
+        box.pack_end(self.photo)
+        self.photo.show()
+
+    def _crop_item_cb(self, tb, item):
+        self.photo.region_selector_show()
+
+    def _close_item_cb(self, tb, item):
+        self.bg.delete()
+"""
