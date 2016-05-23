@@ -652,8 +652,8 @@ class SlideShow(Slideshow):
             # timeout spinner
             elif mode == 'spinner': 
                 w = Spinner(self, label_format="%2.0f secs.",
-                                       step=1, min_max=(3, 60),
-                                       value=options.sshow_timeout)
+                            step=1, min_max=(3, 60),
+                            value=options.sshow_timeout)
                 w.callback_changed_add(self._spinner_cb)
                 self.spinner = w
             # Transition selector
@@ -812,11 +812,13 @@ class InfoWin(DialogWindow):
 class MainWin(StandardWindow):
     def __init__(self):
         StandardWindow.__init__(self, 'eluminance', 'Eluminance',
-                                autodel=True, size=(800,600))
+                                autodel=True, size=(800,600),
+                                tree_focus_allow=False)
         self.callback_delete_request_add(lambda o: elementary.exit())
 
         self.layout = Layout(self, file=(THEME_FILE, 'eluminance/main'),
-                             size_hint_expand=EXPAND_BOTH)
+                             size_hint_expand=EXPAND_BOTH,
+                             tree_focus_allow=False)
         self.resize_object_add(self.layout)
         self.layout.show()
 
