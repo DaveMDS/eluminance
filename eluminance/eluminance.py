@@ -446,9 +446,9 @@ class ScrollablePhotocam(Photocam, Scrollable):
         self.on_mouse_wheel_add(self._on_mouse_wheel)
         self.on_mouse_down_add(self._on_mouse_down)
         self.on_mouse_up_add(self._on_mouse_up)
-        self.on_del_add(self._on_del)
-        self._drag_start_geom = None
-        self.sel = None
+        # self.on_del_add(self._on_del) # UNUSED region selector
+        # self._drag_start_geom = None  # UNUSED region selector
+        # self.sel = None               # UNUSED region selector
 
     def zoom_set(self, val):
         if isinstance(val, float):
@@ -472,12 +472,11 @@ class ScrollablePhotocam(Photocam, Scrollable):
                 if old > z: break
             self.zoom_set(z ** -1)
 
-    def _on_del(self, obj):
-        if self.sel: self.sel.delete()
+    # def _on_del(self, obj): # UNUSED region selector
+        # if self.sel: self.sel.delete()
 
     # mouse wheel: zoom
     def _on_mouse_wheel(self, obj, event):
-        # event.event_flags |= EVAS_EVENT_FLAG_ON_HOLD
         new = self.zoom * (1.1 if event.z == 1 else 0.9)
         self.zoom_set(new)
 
@@ -486,23 +485,25 @@ class ScrollablePhotocam(Photocam, Scrollable):
 
     # mouse drag: pan
     def _on_mouse_down(self, obj, event):
-        if event.button in (2, 3):
+        if event.button in (1, 2):
             self._drag_start_region = obj.region
             self._drag_start_x, self._drag_start_y = event.position.canvas
-            obj.on_mouse_move_add(self._on_mouse_move)
+            self.on_mouse_move_add(self._on_mouse_move)
+            self.cursor = 'fleur'
 
     def _on_mouse_up(self, obj, event):
-        if event.button in (2, 3):
-            obj.on_mouse_move_del(self._on_mouse_move)
+        if event.button in (1, 2):
+            self.on_mouse_move_del(self._on_mouse_move)
+            self.cursor = None
 
     def _on_mouse_move(self, obj, event):
-        if self._drag_start_geom is None:
-            x, y = event.position.canvas
-            dx, dy = self._drag_start_x - x, self._drag_start_y - y
-            x, y, w, h = self._drag_start_region
-            obj.region_show(x + dx, y + dy, w, h)
+        # if self._drag_start_geom is None: # UNUSED region selector
+        x, y = event.position.canvas
+        dx, dy = self._drag_start_x - x, self._drag_start_y - y
+        x, y, w, h = self._drag_start_region
+        obj.region_show(x + dx, y + dy, w, h)
 
-    # region selector stuff
+    """ UNUSED region selector stuff
     def region_selector_show(self):
         self.sel = Edje(self.evas, file=THEME_FILE, group='sel')
         self.sel.show()
@@ -576,7 +577,7 @@ class ScrollablePhotocam(Photocam, Scrollable):
 
         # send signal to edje with new rels
         self.sel.message_send(1, (rel1x, rel1y, rel2x, rel2y))
-
+    """
 
 class StatusBar(Box):
     def __init__(self, parent):
