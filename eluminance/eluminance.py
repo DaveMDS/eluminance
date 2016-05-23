@@ -88,6 +88,7 @@ class Options(object):
     def __init__(self):
         self.sshow_timeout = 5.0
         self.sshow_transition = 'fade_fast'
+        self.sshow_loop = True
         self.favorites = []
 
     def load(self):
@@ -618,6 +619,7 @@ class SlideShow(Slideshow):
 
         self.itc = SlideshowItemClass(self._item_get_func)
         Slideshow.__init__(self, parent, style='eluminance',
+                           loop=options.sshow_loop, 
                            transition=options.sshow_transition)
         self.callback_changed_add(self._changed_cb)
 
