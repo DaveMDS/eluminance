@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Copyright (C) 2015 Davide Andreoli <dave@gurumeditation.it>
+# Copyright (C) 2015-2016 Davide Andreoli <dave@gurumeditation.it>
 #
 # This file is part of Eluminance.
 #

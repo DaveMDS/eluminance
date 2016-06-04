@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Copyright (C) 2015 Davide Andreoli <dave@gurumeditation.it>
+# Copyright (C) 2015-2016 Davide Andreoli <dave@gurumeditation.it>
 #
 # This file is part of Eluminance.
 #
@@ -26,45 +26,9 @@ import pickle
 import gettext
 from xdg.BaseDirectory import xdg_config_home
 
+from efl import elementary as elm
 from efl.evas import EXPAND_BOTH, EXPAND_HORIZ, EXPAND_VERT, \
-    FILL_BOTH, FILL_HORIZ, FILL_VERT, EVAS_EVENT_FLAG_ON_HOLD
-from efl.edje import Edje
-
-from efl import elementary
-from efl.elementary.background import Background
-from efl.elementary.button import Button
-from efl.elementary.box import Box
-from efl.elementary.ctxpopup import Ctxpopup, \
-    ELM_CTXPOPUP_DIRECTION_RIGHT, ELM_CTXPOPUP_DIRECTION_LEFT, \
-    ELM_CTXPOPUP_DIRECTION_DOWN, ELM_CTXPOPUP_DIRECTION_UP
-from efl.elementary.entry import Entry
-from efl.elementary.frame import Frame
-from efl.elementary.genlist import Genlist, GenlistItemClass, \
-    ELM_GENLIST_ITEM_TREE
-from efl.elementary.gengrid import Gengrid, GengridItemClass, \
-    ELM_OBJECT_SELECT_MODE_ALWAYS
-from efl.elementary.hoversel import Hoversel
-from efl.elementary.icon import Icon
-from efl.elementary.image import Image
-from efl.elementary.label import Label
-from efl.elementary.layout import Layout
-from efl.elementary.menu import Menu
-from efl.elementary.notify import Notify
-from efl.elementary.photocam import Photocam, ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT, \
-    ELM_PHOTOCAM_ZOOM_MODE_AUTO_FILL, ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT_IN, \
-    ELM_PHOTOCAM_ZOOM_MODE_MANUAL
-from efl.elementary.scroller import Scrollable, ELM_SCROLLER_POLICY_OFF
-from efl.elementary.scroller import Scroller, \
-    ELM_SCROLLER_MOVEMENT_BLOCK_VERTICAL, ELM_SCROLLER_MOVEMENT_BLOCK_HORIZONTAL
-from efl.elementary.separator import Separator
-from efl.elementary.segment_control import SegmentControl
-from efl.elementary.slideshow import Slideshow, SlideshowItemClass
-from efl.elementary.spinner import Spinner
-from efl.elementary.table import Table
-from efl.elementary.thumb import Thumb, ETHUMB_THUMB_CROP
-from efl.elementary.toolbar import Toolbar
-from efl.elementary.window import StandardWindow, DialogWindow
-from efl.elementary.theme import theme_extension_add
+                     FILL_BOTH, FILL_HORIZ, FILL_VERT
 
 import eluminance.utils as utils
 
@@ -115,10 +79,10 @@ app = None
 options = Options()
 
 
-class StdButton(Button):
+class StdButton(elm.Button):
     """ A Button with a standard fdo icon """
     def __init__(self, parent, icon, *args, **kargs):
-        Button.__init__(self, parent, *args, **kargs)
+        elm.Button.__init__(self, parent, *args, **kargs)
         self.icon = icon
         self.show()
 
@@ -128,22 +92,22 @@ class StdButton(Button):
 
     @icon.setter
     def icon(self, name):
-        self.content = Icon(self, standard=name, size_hint_min=(18,18))
+        self.content = elm.Icon(self, standard=name, size_hint_min=(18,18))
 
 
-class TreeView(Table):
+class TreeView(elm.Table):
     def __init__(self, parent, select_cb):
         self._select_cb = select_cb
 
-        Table.__init__(self, parent, size_hint_expand=EXPAND_BOTH,
-                       size_hint_fill=FILL_BOTH)
+        elm.Table.__init__(self, parent, size_hint_expand=EXPAND_BOTH,
+                           size_hint_fill=FILL_BOTH)
 
-        bg = Background(self, size_hint_expand=EXPAND_BOTH, 
+        bg = elm.Background(self, size_hint_expand=EXPAND_BOTH, 
                         size_hint_fill=FILL_BOTH)
         self.pack(bg, 0, 0, 1, 2)
         bg.show()
 
-        self.sc = SegmentControl(self)
+        self.sc = elm.SegmentControl(self)
         it = self.sc.item_add(None, 'Home') # TODO: translate
         it.data['path'] = os.path.expanduser('~')
         it = self.sc.item_add(None, 'Root')
@@ -151,16 +115,16 @@ class TreeView(Table):
         it = self.sc.item_add(None, 'Favs')
         it.data['path'] = 'favs'
         self.sc.callback_changed_add(self._segment_changed_cb)
-        pad = Frame(self, style='pad_small', content=self.sc, 
-                    size_hint_expand=EXPAND_HORIZ)
+        pad = elm.Frame(self, style='pad_small', content=self.sc, 
+                        size_hint_expand=EXPAND_HORIZ)
         self.pack(pad, 0, 0, 1, 1)
         pad.show()
         
-        self.itc = GenlistItemClass('one_icon',
-                                    text_get_func=self._gl_text_get,
-                                    content_get_func=self._gl_content_get)
-        self.li = Genlist(self, size_hint_expand=EXPAND_BOTH,
-                          size_hint_fill=FILL_BOTH)
+        self.itc = elm.GenlistItemClass('one_icon',
+                                        text_get_func=self._gl_text_get,
+                                        content_get_func=self._gl_content_get)
+        self.li = elm.Genlist(self, size_hint_expand=EXPAND_BOTH,
+                                    size_hint_fill=FILL_BOTH)
         self.li.callback_selected_add(self._item_selected_cb)
         self.li.callback_expand_request_add(self._item_expand_request_cb)
         self.li.callback_expanded_add(self._item_expanded_cb)
@@ -179,7 +143,7 @@ class TreeView(Table):
     def _gl_content_get(self, gl, part, item_data):
         if item_data is not None:
             icon = 'starred' if item_data in options.favorites else 'folder'
-            return Icon(gl, standard=icon, resizable=(False,False))
+            return elm.Icon(gl, standard=icon, resizable=(False,False))
 
     def _item_selected_cb(self, gl, item):
         self._select_cb(item.data)
@@ -201,18 +165,18 @@ class TreeView(Table):
         item.selected = True
         app.win.freeze()
 
-        pop = Ctxpopup(app.win, direction_priority=(
-                       ELM_CTXPOPUP_DIRECTION_RIGHT,ELM_CTXPOPUP_DIRECTION_DOWN,
-                       ELM_CTXPOPUP_DIRECTION_LEFT,ELM_CTXPOPUP_DIRECTION_UP))
+        pop = elm.Ctxpopup(app.win, direction_priority=(
+                elm.ELM_CTXPOPUP_DIRECTION_RIGHT, elm.ELM_CTXPOPUP_DIRECTION_DOWN,
+                elm.ELM_CTXPOPUP_DIRECTION_LEFT, elm.ELM_CTXPOPUP_DIRECTION_UP))
         pop.callback_dismissed_add(self._popup_dismissed_cb)
         pop.item_append(_('Set as root'), None, 
                         self._popup_set_root_cb, item.data)
         if item.data in options.favorites:
             label = _('Remove from favorites')
-            icon = Icon(pop, standard='bookmark-remove')
+            icon = elm.Icon(pop, standard='bookmark-remove')
         else:
             label = _('Add to favorites')
-            icon = Icon(pop, standard='bookmark-add')
+            icon = elm.Icon(pop, standard='bookmark-add')
         pop.item_append(label, icon, self._popup_toggle_fav_cb, item.data)
         
         x, y = self.evas.pointer_canvas_xy_get()
@@ -255,14 +219,14 @@ class TreeView(Table):
         if path == 'favs':
             for path in utils.natural_sort(options.favorites):
                 it = self.li.item_append(self.itc, path, parent,
-                                         flags=ELM_GENLIST_ITEM_TREE)
+                                         flags=elm.ELM_GENLIST_ITEM_TREE)
         else:
             for f in utils.natural_sort(os.listdir(path)):
                 if f[0] == '.': continue
                 fullpath = os.path.join(path, f)
                 if os.path.isdir(fullpath):
                     it = self.li.item_append(self.itc, fullpath, parent,
-                                             flags=ELM_GENLIST_ITEM_TREE)
+                                             flags=elm.ELM_GENLIST_ITEM_TREE)
         if it is None:
             it = self.li.item_append(self.itc, None, parent)
             it.disabled = True
@@ -284,14 +248,15 @@ class TreeView(Table):
                 it = it.next
 
 
-class PhotoGrid(Gengrid):
+class PhotoGrid(elm.Gengrid):
     def __init__(self, parent, select_cb):
         self._select_cb = select_cb
-        self.itc = GengridItemClass('default',
-                                    text_get_func=self._gg_text_get,
-                                    content_get_func=self._gg_content_get)
-        Gengrid.__init__(self, parent, select_mode=ELM_OBJECT_SELECT_MODE_ALWAYS,
-                         item_size=(128, 128), align=(0.5, 0.0))
+        self.itc = elm.GengridItemClass('default',
+                                        text_get_func=self._gg_text_get,
+                                        content_get_func=self._gg_content_get)
+        elm.Gengrid.__init__(self, parent,
+                             item_size=(128, 128), align=(0.5, 0.0),
+                             select_mode=elm.ELM_OBJECT_SELECT_MODE_ALWAYS)
         self.callback_selected_add(self._item_selected_cb)
         self.drag_item_container_add(0.2, 0.0,
                                      self._drag_item_get,
@@ -301,7 +266,7 @@ class PhotoGrid(Gengrid):
         return self.at_xy_item_get(x, y)
 
     def _drag_item_data_get(self, obj, item, info):
-        info.format = elementary.ELM_SEL_FORMAT_TARGETS
+        info.format = elm.ELM_SEL_FORMAT_TARGETS
         info.createicon = self._drag_create_icon
         info.createdata = item
         info.dragdone = self._drag_done
@@ -311,8 +276,8 @@ class PhotoGrid(Gengrid):
 
     def _drag_create_icon(self, win, xoff, yoff, item):
         item.cursor = 'fleur'
-        ic = elementary.Photo(win, file=item.data, aspect_fixed=True,
-                              fill_inside=False, size=100)
+        ic = elm.Photo(win, file=item.data, aspect_fixed=True,
+                       fill_inside=False, size=100)
         mx, my = self.evas.pointer_canvas_xy
         return (ic, mx - 60, my - 60)
 
@@ -321,8 +286,8 @@ class PhotoGrid(Gengrid):
 
     def _gg_content_get(self, gg, part, item_data):
         if part == 'elm.swallow.icon':
-            return Thumb(gg, style='noframe', aspect=ETHUMB_THUMB_CROP,
-                         file=item_data)
+            return elm.Thumb(gg, style='noframe', aspect=elm.ETHUMB_THUMB_CROP,
+                             file=item_data)
 
     def _gg_text_get(self, gg, part, item_data):
         return os.path.basename(item_data)
@@ -345,7 +310,7 @@ class PhotoGrid(Gengrid):
             it = it.next
 
 
-class ScrollablePhoto(Scroller):
+class ScrollablePhoto(elm.Scroller):
     ZOOMS = [5, 7, 10, 15, 20, 30, 50, 75, 100, 150, 200, 300,
              500, 750, 1000, 1500, 2000, 3000, 5000, 7500, 10000]
     def __init__(self, parent, zoom_changed_cb):
@@ -353,20 +318,21 @@ class ScrollablePhoto(Scroller):
         self._zoom_mode = None # 'fill' or 'fit' on resize
         self.image_size = 0, 0 # original image pixel size
 
-        Scroller.__init__(self, parent, style="trans",
-                    policy=(ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_OFF),
-                    movement_block=ELM_SCROLLER_MOVEMENT_BLOCK_VERTICAL |
-                                   ELM_SCROLLER_MOVEMENT_BLOCK_HORIZONTAL)
+        elm.Scroller.__init__(self, parent, style="trans",
+                policy=(elm.ELM_SCROLLER_POLICY_OFF, elm.ELM_SCROLLER_POLICY_OFF),
+                movement_block=elm.ELM_SCROLLER_MOVEMENT_BLOCK_VERTICAL |
+                               elm.ELM_SCROLLER_MOVEMENT_BLOCK_HORIZONTAL)
         self.on_mouse_wheel_add(self._on_mouse_wheel)
         self.on_mouse_down_add(self._on_mouse_down)
         self.on_mouse_up_add(self._on_mouse_up)
         self.on_resize_add(self._on_resize)
 
-        self.img = Image(self, preload_disabled=False)
+        self.img = elm.Image(self, preload_disabled=False)
         self.img.show()
 
         # table help to keep the image centered in the scroller
-        tb = Table(self, size_hint_expand=EXPAND_BOTH, size_hint_fill=FILL_BOTH)
+        tb = elm.Table(self, size_hint_expand=EXPAND_BOTH,
+                             size_hint_fill=FILL_BOTH)
         tb.pack(self.img, 0, 0, 1, 1)
         self.content = tb
 
@@ -457,14 +423,14 @@ class ScrollablePhoto(Scroller):
                 self.zoom_centered(z * 100)
 
 
-class ScrollablePhotocam(Photocam, Scrollable):
+class ScrollablePhotocam(elm.Photocam, elm.Scrollable):
     ZOOMS = [0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.75, 1.0, 1.5,
              2.0, 3.0, 5.0, 7.5, 10, 15, 20, 30, 50, 75, 100]
     def __init__(self, parent, changed_cb):
         self._changed_cb = changed_cb
-        Photocam.__init__(self, parent, paused=True,
-                          zoom_mode=ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT)
-        self.policy = ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_OFF
+        elm.Photocam.__init__(self, parent, paused=True,
+                              zoom_mode=elm.ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT)
+        self.policy = elm.ELM_SCROLLER_POLICY_OFF, elm.ELM_SCROLLER_POLICY_OFF
         self.callback_zoom_change_add(self._zoom_change_cb)
         self.on_mouse_wheel_add(self._on_mouse_wheel)
         self.on_mouse_down_add(self._on_mouse_down)
@@ -475,15 +441,15 @@ class ScrollablePhotocam(Photocam, Scrollable):
 
     def zoom_set(self, val):
         if isinstance(val, float):
-            self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_MANUAL
+            self.zoom_mode = elm.ELM_PHOTOCAM_ZOOM_MODE_MANUAL
             self.zoom = utils.clamp(self.ZOOMS[-1] ** -1, val, self.ZOOMS[0] ** -1)
             self._zoom_change_cb(self)
         elif val == '1:1':
             self.zoom_set(1.0)
         elif val == 'fill':
-            self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_AUTO_FILL
+            self.zoom_mode = elm.ELM_PHOTOCAM_ZOOM_MODE_AUTO_FILL
         elif val == 'fit':
-            self.zoom_mode = ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT
+            self.zoom_mode = elm.ELM_PHOTOCAM_ZOOM_MODE_AUTO_FIT
         elif val == 'in':
             old = self.zoom ** -1
             for z in self.ZOOMS:
@@ -528,6 +494,7 @@ class ScrollablePhotocam(Photocam, Scrollable):
 
     """ UNUSED region selector stuff
     def region_selector_show(self):
+        # from efl.edje import Edje
         self.sel = Edje(self.evas, file=THEME_FILE, group='sel')
         self.sel.show()
 
@@ -603,18 +570,19 @@ class ScrollablePhotocam(Photocam, Scrollable):
     """
 
 
-class StatusBar(Box):
+class StatusBar(elm.Box):
     def __init__(self, parent):
-        Box.__init__(self, parent, horizontal=True,
-                     size_hint_expand=EXPAND_HORIZ, size_hint_fill=FILL_HORIZ)
+        elm.Box.__init__(self, parent, horizontal=True,
+                         size_hint_expand=EXPAND_HORIZ,
+                         size_hint_fill=FILL_HORIZ)
 
-        self.lb_name = Label(self, ellipsis=True,
+        self.lb_name = elm.Label(self, ellipsis=True,
                     size_hint_expand=EXPAND_HORIZ, size_hint_fill=FILL_HORIZ,
                     text='<align=left>{}</align>'.format(_('No image selected')))
         self.pack_end(self.lb_name)
         self.lb_name.show()
         
-        self.lb_info = Label(self)
+        self.lb_info = elm.Label(self)
         self.pack_end(self.lb_info)
         self.lb_info.show()
 
@@ -635,17 +603,17 @@ class StatusBar(Box):
                 _('Zoom'), zoom)
 
 
-class SlideShow(Slideshow):
+class SlideShow(elm.Slideshow):
     TRANSITIONS = ('fade', 'fade_fast', 'black_fade', 'horizontal', 'vertical',
                    'square', 'immediate')
     def __init__(self, parent, photo_changed_cb, zoom_changed_cb):
         self._photo_changed_cb = photo_changed_cb
         self._zoom_changed_cb = zoom_changed_cb
 
-        self.itc = SlideshowItemClass(self._item_get_func)
-        Slideshow.__init__(self, parent, style='eluminance',
-                           loop=options.sshow_loop, 
-                           transition=options.sshow_transition)
+        self.itc = elm.SlideshowItemClass(self._item_get_func)
+        elm.Slideshow.__init__(self, parent, style='eluminance',
+                               loop=options.sshow_loop, 
+                               transition=options.sshow_transition)
         self.callback_changed_add(self._changed_cb)
 
         buttons = [ # (mode, tooltip, icon, action)
@@ -667,7 +635,7 @@ class SlideShow(Slideshow):
 
         for mode, tooltip, icon, action in buttons:
             if mode == 'sep':
-                w = Separator(self)
+                w = elm.Separator(self)
             # Play/Pause toggle button
             elif mode == 'toggle':
                 w = StdButton(self, icon='media-playback-start', text=_('Play'))
@@ -675,15 +643,15 @@ class SlideShow(Slideshow):
                 self.toggle_btn = w
             # timeout spinner
             elif mode == 'spinner': 
-                w = Spinner(self, label_format="%2.0f secs.",
-                            step=1, min_max=(3, 60),
-                            value=options.sshow_timeout)
+                w = elm.Spinner(self, label_format="%2.0f secs.",
+                                step=1, min_max=(3, 60),
+                                value=options.sshow_timeout)
                 w.callback_changed_add(self._spinner_cb)
                 self.spinner = w
             # Transition selector
             elif mode == 'hover':
-                w = Hoversel(self, hover_parent=parent,
-                             text=_(options.sshow_transition))
+                w = elm.Hoversel(self, hover_parent=parent,
+                                 text=_(options.sshow_transition))
                 w.callback_clicked_add(lambda h: app.win.freeze())
                 w.callback_dismissed_add(lambda h: app.win.unfreeze())
                 for t in self.TRANSITIONS:
@@ -769,62 +737,63 @@ class SlideShow(Slideshow):
         self.hs_transition.text = _(transition)
 
 
-class InfoWin(DialogWindow):
+class InfoWin(elm.DialogWindow):
     def __init__(self, parent):
-        DialogWindow.__init__(self, parent, 'eluminance-info', 'Eluminance',
-                              autodel=True)
+        elm.DialogWindow.__init__(self, parent, 'eluminance-info', 'Eluminance',
+                                  autodel=True)
 
-        fr = Frame(self, style='pad_large', size_hint_expand=EXPAND_BOTH,
-                   size_hint_align=FILL_BOTH)
+        fr = elm.Frame(self, style='pad_large', size_hint_expand=EXPAND_BOTH,
+                       size_hint_align=FILL_BOTH)
         self.resize_object_add(fr)
         fr.show()
 
-        hbox = Box(self, horizontal=True, padding=(12,12))
+        hbox = elm.Box(self, horizontal=True, padding=(12,12))
         fr.content = hbox
         hbox.show()
 
-        vbox = Box(self, align=(0.0,0.0), padding=(6,6),
-                   size_hint_expand=EXPAND_VERT, size_hint_fill=FILL_VERT)
+        vbox = elm.Box(self, align=(0.0,0.0), padding=(6,6),
+                       size_hint_expand=EXPAND_VERT, size_hint_fill=FILL_VERT)
         hbox.pack_end(vbox)
         vbox.show()
 
         # icon + version
-        ic = Icon(self, standard='eluminance', size_hint_min=(64,64))
+        ic = elm.Icon(self, standard='eluminance', size_hint_min=(64,64))
         vbox.pack_end(ic)
         ic.show()
 
-        lb = Label(self, text=_('Version: %s') % __version__)
+        lb = elm.Label(self, text=_('Version: %s') % __version__)
         vbox.pack_end(lb)
         lb.show()
 
-        sep = Separator(self, horizontal=True)
+        sep = elm.Separator(self, horizontal=True)
         vbox.pack_end(sep)
         sep.show()
 
         # buttons
-        bt = Button(self, text=_('Eluminance'), size_hint_fill=FILL_HORIZ)
+        bt = elm.Button(self, text=_('Eluminance'), size_hint_fill=FILL_HORIZ)
         bt.callback_clicked_add(lambda b: self.entry.text_set(utils.INFO))
         vbox.pack_end(bt)
         bt.show()
 
-        bt = Button(self, text=_('Website'),size_hint_align=FILL_HORIZ)
+        bt = elm.Button(self, text=_('Website'),size_hint_align=FILL_HORIZ)
         bt.callback_clicked_add(lambda b: utils.xdg_open(utils.HOMEPAGE))
         vbox.pack_end(bt)
         bt.show()
 
-        bt = Button(self, text=_('Authors'), size_hint_align=FILL_HORIZ)
+        bt = elm.Button(self, text=_('Authors'), size_hint_align=FILL_HORIZ)
         bt.callback_clicked_add(lambda b: self.entry.text_set(utils.AUTHORS))
         vbox.pack_end(bt)
         bt.show()
 
-        bt = Button(self, text=_('License'), size_hint_align=FILL_HORIZ)
+        bt = elm.Button(self, text=_('License'), size_hint_align=FILL_HORIZ)
         bt.callback_clicked_add(lambda b: self.entry.text_set(utils.LICENSE))
         vbox.pack_end(bt)
         bt.show()
 
         # main text
-        self.entry = Entry(self, editable=False, scrollable=True, text=utils.INFO,
-                           size_hint_expand=EXPAND_BOTH, size_hint_fill=FILL_BOTH)
+        self.entry = elm.Entry(self, editable=False, scrollable=True,
+                               text=utils.INFO, size_hint_expand=EXPAND_BOTH,
+                               size_hint_fill=FILL_BOTH)
         self.entry.callback_anchor_clicked_add(lambda e,i: utils.xdg_open(i.name))
         hbox.pack_end(self.entry)
         self.entry.show()
@@ -833,16 +802,16 @@ class InfoWin(DialogWindow):
         self.show()
 
 
-class MainWin(StandardWindow):
+class MainWin(elm.StandardWindow):
     def __init__(self):
-        StandardWindow.__init__(self, 'eluminance', 'Eluminance',
-                                autodel=True, size=(800,600),
-                                tree_focus_allow=False)
-        self.callback_delete_request_add(lambda o: elementary.exit())
+        elm.StandardWindow.__init__(self, 'eluminance', 'Eluminance',
+                                    autodel=True, size=(800,600),
+                                    tree_focus_allow=False)
+        self.callback_delete_request_add(lambda o: elm.exit())
 
-        self.layout = Layout(self, file=(THEME_FILE, 'eluminance/main'),
-                             size_hint_expand=EXPAND_BOTH,
-                             tree_focus_allow=False)
+        self.layout = elm.Layout(self, file=(THEME_FILE, 'eluminance/main'),
+                                 size_hint_expand=EXPAND_BOTH,
+                                 tree_focus_allow=False)
         self.resize_object_add(self.layout)
         self.layout.show()
 
@@ -919,12 +888,12 @@ class EluminanceApp(object):
 
 def main():
     options.load()
-    elementary.need_ethumb()
-    theme_extension_add(THEME_FILE)
+    elm.need_ethumb()
+    elm.theme_extension_add(THEME_FILE)
 
     global app
     app = EluminanceApp()
-    elementary.run()
+    elm.run()
     options.save()
 
 if __name__ == '__main__':
@@ -938,14 +907,14 @@ class ImageEditor(object):
         app.win.resize_object_add(self.bg)
         self.bg.show()
 
-        box = Box(self.bg, size_hint_expand=EXPAND_BOTH,
-                  size_hint_fill=FILL_BOTH)
+        box = elm.Box(self.bg, size_hint_expand=EXPAND_BOTH,
+                      size_hint_fill=FILL_BOTH)
         app.win.resize_object_add(box)
         box.show()
 
-        tb = Toolbar(app.win, homogeneous=True, menu_parent=app.win,
-                     size_hint_expand=EXPAND_HORIZ,
-                     size_hint_fill=FILL_HORIZ)
+        tb = elm.Toolbar(app.win, homogeneous=True, menu_parent=app.win,
+                         size_hint_expand=EXPAND_HORIZ,
+                         size_hint_fill=FILL_HORIZ)
 
         item = tb.item_append('rotate', 'Rotate')
         item.menu = True
