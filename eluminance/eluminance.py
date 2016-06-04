@@ -287,14 +287,37 @@ class TreeView(Table):
 class PhotoGrid(Gengrid):
     def __init__(self, parent, select_cb):
         self._select_cb = select_cb
-
-        Gengrid.__init__(self, parent, select_mode=ELM_OBJECT_SELECT_MODE_ALWAYS,
-                         item_size=(128, 128), align=(0.5, 0.0))
-        self.callback_selected_add(self._item_selected_cb)
-
         self.itc = GengridItemClass('default',
                                     text_get_func=self._gg_text_get,
                                     content_get_func=self._gg_content_get)
+        Gengrid.__init__(self, parent, select_mode=ELM_OBJECT_SELECT_MODE_ALWAYS,
+                         item_size=(128, 128), align=(0.5, 0.0))
+        self.callback_selected_add(self._item_selected_cb)
+        self.drag_item_container_add(0.2, 0.0,
+                                     self._drag_item_get,
+                                     self._drag_item_data_get)
+    
+    def _drag_item_get(self, obj, x, y):
+        return self.at_xy_item_get(x, y)
+
+    def _drag_item_data_get(self, obj, item, info):
+        info.format = elementary.ELM_SEL_FORMAT_TARGETS
+        info.createicon = self._drag_create_icon
+        info.createdata = item
+        info.dragdone = self._drag_done
+        info.donecbdata = item
+        info.data = 'file://' + item.data
+        return True
+
+    def _drag_create_icon(self, win, xoff, yoff, item):
+        item.cursor = 'fleur'
+        ic = elementary.Photo(win, file=item.data, aspect_fixed=True,
+                              fill_inside=False, size=100)
+        mx, my = self.evas.pointer_canvas_xy
+        return (ic, mx - 60, my - 60)
+
+    def _drag_done(self, obj, accepted, item):
+        item.cursor = None
 
     def _gg_content_get(self, gg, part, item_data):
         if part == 'elm.swallow.icon':
@@ -578,6 +601,7 @@ class ScrollablePhotocam(Photocam, Scrollable):
         # send signal to edje with new rels
         self.sel.message_send(1, (rel1x, rel1y, rel2x, rel2y))
     """
+
 
 class StatusBar(Box):
     def __init__(self, parent):
