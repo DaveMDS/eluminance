@@ -20,7 +20,7 @@ setup(
     author = 'Dave Andreoli',
     author_email = 'dave@gurumeditation.it',
     packages = ['eluminance'],
-    requires = ['efl (>=1.14)', 'xdg'],
+    requires = ['efl (>=1.17)', 'xdg'],
     provides = ['eluminance'],
     scripts = ['bin/eluminance'],
     cmdclass={
