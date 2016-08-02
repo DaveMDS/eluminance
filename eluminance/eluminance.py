@@ -26,6 +26,7 @@ import pickle
 import gettext
 from xdg.BaseDirectory import xdg_config_home
 
+from efl import edje
 from efl import elementary as elm
 from efl.evas import EXPAND_BOTH, EXPAND_HORIZ, EXPAND_VERT, \
                      FILL_BOTH, FILL_HORIZ, FILL_VERT
