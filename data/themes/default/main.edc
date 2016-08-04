@@ -201,6 +201,7 @@ collections {
                align: 0.5 1.0;
                fixed: 1 1;
                box.min: 1 1;
+               box.layout: "horizontal";
             }
             description { state: "visible" 0.0;
                inherit: "default" 0.0;
