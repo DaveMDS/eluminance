@@ -664,7 +664,7 @@ class SlideShow(elm.Slideshow):
                 w.callback_clicked_add(self._buttons_cb, action)
 
             parent.layout.box_append('controls.box', w)
-            w.tooltip_text_set(tooltip)
+            if tooltip: w.tooltip_text_set(tooltip)
             w.show()
 
     def photo_add(self, path):
