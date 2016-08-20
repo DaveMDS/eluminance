@@ -23,6 +23,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 import os
 import re
 from efl.ecore import Exe
+from efl.elementary import Icon
 
 
 def xdg_open(url_or_file):
@@ -55,6 +56,15 @@ def natural_sort(l):
    convert = lambda text: int(text) if text.isdigit() else text.lower() 
    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)] 
    return sorted(l, key=alphanum_key)
+
+
+class SafeIcon(Icon):
+    def __init__(self, parent, icon_name, **kargs):
+        Icon.__init__(self, parent, **kargs)
+        try:
+            self.standard = icon_name
+        except RuntimeWarning:
+            print("ERROR: Cannot find icon: '%s'" % icon_name)
 
 
 HOMEPAGE = 'https://github.com/davemds/eluminance'

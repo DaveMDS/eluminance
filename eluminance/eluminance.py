@@ -93,7 +93,7 @@ class StdButton(elm.Button):
 
     @icon.setter
     def icon(self, name):
-        self.content = elm.Icon(self, standard=name, size_hint_min=(18,18))
+        self.content = utils.SafeIcon(self, name, size_hint_min=(18,18))
 
 
 class TreeView(elm.Table):
@@ -144,7 +144,7 @@ class TreeView(elm.Table):
     def _gl_content_get(self, gl, part, item_data):
         if item_data is not None:
             icon = 'starred' if item_data in options.favorites else 'folder'
-            return elm.Icon(gl, standard=icon, resizable=(False,False))
+            return utils.SafeIcon(gl, icon, resizable=(False,False))
 
     def _item_selected_cb(self, gl, item):
         self._select_cb(item.data)
@@ -174,10 +174,10 @@ class TreeView(elm.Table):
                         self._popup_set_root_cb, item.data)
         if item.data in options.favorites:
             label = _('Remove from favorites')
-            icon = elm.Icon(pop, standard='bookmark-remove')
+            icon = utils.SafeIcon(pop, 'bookmark-remove')
         else:
             label = _('Add to favorites')
-            icon = elm.Icon(pop, standard='bookmark-add')
+            icon = utils.SafeIcon(pop, 'bookmark-add')
         pop.item_append(label, icon, self._popup_toggle_fav_cb, item.data)
         
         x, y = self.evas.pointer_canvas_xy_get()
@@ -758,7 +758,7 @@ class InfoWin(elm.DialogWindow):
         vbox.show()
 
         # icon + version
-        ic = elm.Icon(self, standard='eluminance', size_hint_min=(64,64))
+        ic = utils.SafeIcon(self, 'eluminance', size_hint_min=(64,64))
         vbox.pack_end(ic)
         ic.show()
 
