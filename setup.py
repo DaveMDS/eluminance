@@ -5,7 +5,8 @@ from distutils.version import StrictVersion
 from efl.utils.setup import build_extra, build_edc, build_fdo, build_i18n, uninstall
 from efl import __version__ as efl_version
 
-MIN_EFL = '1.14'
+
+MIN_EFL = '1.18'
 if StrictVersion(efl_version) < MIN_EFL:
     print('Your python-efl version is too old! Found: ' + efl_version)
     print('You need at least version ' + MIN_EFL)
@@ -20,7 +21,7 @@ setup(
     author = 'Dave Andreoli',
     author_email = 'dave@gurumeditation.it',
     packages = ['eluminance'],
-    requires = ['efl (>=1.17)', 'xdg'],
+    requires = ['efl (>=1.18)', 'xdg'],
     provides = ['eluminance'],
     scripts = ['bin/eluminance'],
     cmdclass={
