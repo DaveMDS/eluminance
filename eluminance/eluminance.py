@@ -37,8 +37,10 @@ __version__ = '0.9'
 
 IMG_EXTS = ('.jpg','.jpeg','.png','.gif','.tiff','.bmp')
 
-script_path = os.path.dirname(__file__)
-install_prefix = script_path[0:script_path.find('/lib/python')]
+script_path = os.path.dirname(os.path.abspath(__file__))
+# Fix for lib64 taken from commit https://github.com/DaveMDS/egitu/commit/c92699b5e66f5d2a0ee02d5f4a5fa60afb3b21fb
+install_prefix = script_path[0:script_path.find('/python')]
+install_prefix = install_prefix[0:install_prefix.rfind('/')]
 data_path = os.path.join(install_prefix, 'share', 'eluminance')
 config_file = os.path.join(xdg_config_home, 'eluminance', 'config.pickle')
 THEME_FILE = os.path.join(data_path, 'themes', 'default.edj')
